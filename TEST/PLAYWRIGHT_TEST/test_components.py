@@ -1,108 +1,218 @@
 from playwright.sync_api import sync_playwright
+import json
+from datetime import datetime
 
-URL = "http://localhost/profile_matches.php"
+URL = "http://localhost:8080/home"
+
+DEVICES = [
+    ("iPhone SE", 375, 667),
+    ("iPhone 12", 390, 844),
+    ("iPhone 14 Pro Max", 430, 932),
+    ("Pixel 7", 412, 915),
+    ("Samsung Galaxy S22", 360, 780),
+    ("iPad Mini", 768, 1024)
+]
+
+report = []
 
 with sync_playwright() as p:
 
     browser = p.chromium.launch(headless=False)
 
-    page = browser.new_page(
-        viewport={"width": 1920, "height": 1080}
-    )
+    for device, width, height in DEVICES:
 
-    page.goto(URL)
-    page.wait_for_load_state("networkidle")
+        print("=" * 80)
+        print(device)
 
-    footer = page.locator("footer")
+        context = browser.new_context(
+            viewport={"width": width, "height": height}
+        )
 
-    if footer.count() == 0:
-        print("❌ Footer not found")
-        browser.close()
-        exit()
+        page = context.new_page()
 
-    print("✅ Footer Found")
+        page.goto(URL)
 
-    box = footer.bounding_box()
+        page.wait_for_load_state("networkidle")
 
-    if box:
+        footer = page.locator("footer")
 
-        print(f"Footer Width : {box['width']}")
-        print(f"Footer Height : {box['height']}")
+        if footer.count() == 0:
 
-        if box["width"] < page.viewport_size["width"]:
-            print("❌ Footer does not span full width")
-            print("Recommendation: width:100%")
+            report.append({
+                "device": device,
+                "issue": "Footer Not Found",
+                "recommendation": "Add semantic <footer> element."
+            })
 
-    # Links
-    links = footer.locator("a").all()
+            continue
 
-    print(f"\nLinks : {len(links)}")
+        footer.scroll_into_view_if_needed()
 
-    for i, link in enumerate(links):
+        footer.screenshot(path=f"footer_{device}.png")
 
-        href = link.get_attribute("href")
+        box = footer.bounding_box()
 
-        if not href:
-            print(f"❌ Link {i+1} missing href")
+        # -------------------------
+        # Width
+        # -------------------------
 
-        box = link.bounding_box()
+        if box["width"] < width:
 
-        if box:
+            report.append({
+                "device": device,
+                "issue": "Footer not full width",
+                "recommendation":
+                "Use width:100%; display:block;"
+            })
 
-            if box["height"] < 44 or box["width"] < 44:
-                print(f"⚠ Link {i+1} touch area too small")
+        # -------------------------
+        # Horizontal Scroll
+        # -------------------------
 
-    # Images
-    images = footer.locator("img").all()
-
-    for i, img in enumerate(images):
-
-        alt = img.get_attribute("alt")
-
-        if not alt:
-            print(f"⚠ Image {i+1} missing ALT")
-
-        broken = img.evaluate("""
-        img=>!img.complete || img.naturalWidth==0
+        overflow = page.evaluate("""
+        () => document.documentElement.scrollWidth >
+              document.documentElement.clientWidth
         """)
 
-        if broken:
-            print(f"❌ Broken image {i+1}")
+        if overflow:
 
-    # Buttons
-    buttons = footer.locator("button").all()
+            report.append({
+                "device": device,
+                "issue": "Horizontal scrolling",
+                "recommendation":
+                "Remove fixed widths and use max-width:100%."
+            })
 
-    for i, btn in enumerate(buttons):
+        # -------------------------
+        # Images
+        # -------------------------
 
-        box = btn.bounding_box()
+        images = footer.locator("img").all()
 
-        if box:
+        for i, img in enumerate(images):
 
-            if box["height"] < 44:
-                print(f"⚠ Button {i+1} too small")
+            img_box = img.bounding_box()
 
-    # Overflow
-    overflow = footer.evaluate("""
-    e=>e.scrollWidth>e.clientWidth
-    """)
+            if img_box:
 
-    if overflow:
-        print("❌ Footer horizontal overflow")
+                if img_box["width"] > width:
 
-    # Hidden Elements
-    hidden = footer.locator("*").evaluate_all("""
-    els=>els.filter(e=>{
+                    report.append({
+                        "device": device,
+                        "issue": f"Image {i+1} overflow",
+                        "recommendation":
+                        "max-width:100%; height:auto;"
+                    })
+
+        # -------------------------
+        # Buttons
+        # -------------------------
+
+        buttons = footer.locator("button,a").all()
+
+        for i, btn in enumerate(buttons):
+
+            btn_box = btn.bounding_box()
+
+            if btn_box:
+
+                if btn_box["height"] < 44:
+
+                    report.append({
+                        "device": device,
+                        "issue": f"Button {i+1} too small",
+                        "recommendation":
+                        "Minimum size 44x44px."
+                    })
+
+        # -------------------------
+        # Text Overflow
+        # -------------------------
+
+        overflowing = footer.evaluate("""
+        footer=>{
+
+            let bad=[];
+
+            footer.querySelectorAll("*").forEach(el=>{
+
+                let r=el.getBoundingClientRect();
+
+                if(r.right>window.innerWidth){
+
+                    bad.push(el.tagName);
+
+                }
+
+            });
+
+            return bad.length;
+
+        }
+        """)
+
+        if overflowing:
+
+            report.append({
+                "device": device,
+                "issue": "Overflowing elements",
+                "recommendation":
+                "Allow wrapping using flex-wrap or grid."
+            })
+
+        # -------------------------
+        # Hidden Elements
+        # -------------------------
+
+        hidden = footer.locator("*").evaluate_all("""
+        els=>els.filter(e=>{
         let s=getComputedStyle(e);
         return s.display=='none'||s.visibility=='hidden';
-    }).length
-    """)
+        }).length
+        """)
 
-    if hidden:
-        print(f"⚠ Hidden Elements : {hidden}")
+        if hidden:
 
-    # Screenshot
-    footer.screenshot(path="footer.png")
+            report.append({
+                "device": device,
+                "issue": f"{hidden} hidden elements",
+                "recommendation":
+                "Check media queries."
+            })
 
-    print("\nFooter screenshot saved.")
+        # -------------------------
+        # Links
+        # -------------------------
+
+        links = footer.locator("a").count()
+
+        if links == 0:
+
+            report.append({
+                "device": device,
+                "issue": "No footer links",
+                "recommendation":
+                "Verify footer content."
+            })
+
+        context.close()
 
     browser.close()
+
+print("\n")
+
+print("=" * 80)
+print("FOOTER RESPONSIVE REPORT")
+print("=" * 80)
+
+for item in report:
+
+    print("\nDevice :", item["device"])
+    print("Issue :", item["issue"])
+    print("Recommendation :", item["recommendation"])
+
+with open("footer_report.json","w") as f:
+
+    json.dump(report,f,indent=4)
+
+print("\nJSON report generated.")

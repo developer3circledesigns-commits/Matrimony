@@ -1418,9 +1418,14 @@ textarea.form-control {
     background: var(--brand-secondary);
     color: var(--brand-gray-700);
     margin-top: auto;
+    overflow-x: hidden;
 }
 .site-footer .container {
     max-width: 1520px;
+}
+.site-footer img {
+    max-width: 100%;
+    height: auto;
 }
 
 .footer-brand {
@@ -1432,6 +1437,7 @@ textarea.form-control {
     color: var(--brand-primary) !important;
     text-decoration: none;
     line-height: 0;
+    min-height: 44px;
 }
 
 .footer-brand img {
@@ -1536,6 +1542,9 @@ textarea.form-control {
     min-height: 44px;
 }
 
+.footer-contact li span {
+    word-spacing: -0.05em;
+}
 .footer-contact li svg {
     flex-shrink: 0;
     margin-top: 3px;
@@ -1573,13 +1582,25 @@ textarea.form-control {
         text-align: center;
     }
     .site-footer .row {
-        gap: 20px;
+        gap: 24px;
+    }
+    .site-footer .container {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+    }
+    .footer-brand {
+        justify-content: center;
     }
     .footer-brand img {
         height: 56px;
     }
+    .footer-desc {
+        max-width: 320px;
+        margin-left: auto;
+        margin-right: auto;
+    }
     .footer-heading {
-        margin-top: 1rem;
+        margin-top: 0.5rem;
     }
     .footer-heading::after {
         left: 50%;
@@ -1590,10 +1611,17 @@ textarea.form-control {
     }
     .footer-links a {
         justify-content: center;
+        display: flex;
     }
     .footer-contact li {
         justify-content: center;
         font-size: 0.85rem;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .footer-contact li svg {
+        margin-top: 0;
     }
     .footer-bottom-link {
         margin: 0 0.5rem;

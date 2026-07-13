@@ -73,13 +73,11 @@
     <div class="footer-bottom">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                <div class="col text-center text-md-start mb-2 mb-md-0">
                     <p class="mb-0">&copy; <?= date('Y') ?> Matrimony. All rights reserved.</p>
                 </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <a href="/privacy" class="footer-bottom-link">Privacy</a>
-                    <a href="/terms" class="footer-bottom-link">Terms</a>
-                    <a href="/sitemap" class="footer-bottom-link">Sitemap</a>
+                <div class="col-auto text-center text-md-end ms-auto">
+                    <p class="mb-0">Designed and Developed By <a href="https://thecircledesigns.com/" target="_blank"  style="text-decoration: none; color: inherit;">Circle Designs</a></p>
                 </div>
             </div>
         </div>
