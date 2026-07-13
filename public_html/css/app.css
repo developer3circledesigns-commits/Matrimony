@@ -277,6 +277,7 @@ input, select, textarea, label,
 
 html {
     scroll-behavior: smooth;
+    color-scheme: light !important;
 }
 
 body {
@@ -2600,18 +2601,40 @@ section[id] {
 }
 
 .testimonials-section .carousel-indicators button {
-    width: 10px;
-    height: 10px;
+    width: 44px;
+    height: 44px;
 
-    border: 2px solid var(--brand-tertiary);
+    border: 2px solid transparent;
     background: transparent;
     opacity: 0.4;
-    margin: 0 5px;
+    margin: 0 2px;
     transition: all 0.3s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.testimonials-section .carousel-indicators button::after {
+    content: '';
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--brand-tertiary);
+    background: transparent;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .testimonials-section .carousel-indicators button.active {
     opacity: 1;
+    background: transparent;
+    border-color: transparent;
+    transform: none;
+}
+
+.testimonials-section .carousel-indicators button.active::after {
     background: var(--brand-tertiary);
     border-color: var(--brand-tertiary);
     transform: scale(1.2);
@@ -2661,8 +2684,8 @@ section[id] {
     }
     .testimonials-section .carousel-control-prev,
     .testimonials-section .carousel-control-next {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         left: 0;
         right: 0;
         margin: 0 auto;
@@ -2680,6 +2703,24 @@ section[id] {
     }
     .testimonials-section .carousel {
         padding-bottom: 4rem;
+    }
+}
+
+/* Tablet: bring carousel controls inside the carousel to prevent overflow */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .testimonials-section .carousel-control-prev,
+    .testimonials-section .carousel-control-next {
+        width: 44px;
+        height: 44px;
+        opacity: 0.8;
+    }
+    .testimonials-section .carousel-control-prev {
+        left: -10px;
+        right: auto;
+    }
+    .testimonials-section .carousel-control-next {
+        right: -10px;
+        left: auto;
     }
 }
 
@@ -4528,6 +4569,24 @@ section[id] {
 
 .enquiry-now-btn svg {
     flex-shrink: 0;
+}
+
+/* Touch target minimum size (44x44px WCAG) */
+.carousel-indicators button {
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0 2px;
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.navbar-toggler {
+    min-height: 44px;
+    min-width: 44px;
 }
 
 @media (max-width: 575.98px) {

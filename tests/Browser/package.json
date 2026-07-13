@@ -1,9 +1,0 @@
-{
-  "private": true,
-  "scripts": {
-    "test": "npx playwright test"
-  },
-  "dependencies": {
-    "@playwright/test": "1.52.0"
-  }
-}

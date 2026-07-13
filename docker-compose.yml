@@ -1,11 +1,11 @@
 services:
   app:
     build: .
-    container_name: matrimony-app
     ports:
-      - "8082:80"
+      - "8080:80"
     volumes:
       - .:/var/www/html
+      - storage_data:/var/www/html/storage
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -18,36 +18,34 @@ services:
       db:
         condition: service_healthy
     networks:
-      matrimony-net:
-        aliases:
-          - matrimony.local
+      - matrimony-net
+    restart: unless-stopped
 
   db:
     image: mysql:8.0
-    container_name: matrimony-db
-    restart: unless-stopped
     ports:
       - "3308:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_PASSWORD: root_pass
       MYSQL_DATABASE: matrimony
       MYSQL_USER: matrimony_user
       MYSQL_PASSWORD: matrimony_pass
     volumes:
-      - db-data:/var/lib/mysql
-      - ./database/matrimony_complete.sql:/docker-entrypoint-initdb.d/01-matrimony.sql
+      - mysql_data:/var/lib/mysql
+      - ./database/matrimony_complete.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/migrations/004_profile_indexes.sql:/docker-entrypoint-initdb.d/02-indexes.sql
+      - ./database/migrations/005_add_phone_column.sql:/docker-entrypoint-initdb.d/03-phone.sql
+      - ./database/seed_data.sql:/docker-entrypoint-initdb.d/04-seed.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
     networks:
       - matrimony-net
+    restart: unless-stopped
 
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: matrimony-phpmyadmin
-    restart: unless-stopped
     ports:
       - "8083:80"
     environment:
@@ -56,30 +54,19 @@ services:
       PMA_USER: matrimony_user
       PMA_PASSWORD: matrimony_pass
       UPLOAD_LIMIT: 100M
+      MAX_EXECUTION_TIME: 600
+      MEMORY_LIMIT: 512M
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - matrimony-net
-
-  playwright:
-    image: mcr.microsoft.com/playwright:v1.52.0-noble
-    container_name: matrimony-playwright
-    profiles:
-      - test
-    working_dir: /tests
-    volumes:
-      - ./tests/Browser:/tests
-    environment:
-      BASE_URL: http://matrimony.local:80
-    command: ["sh", "-c", "npm install && npx playwright test"]
-    depends_on:
-      app:
-        condition: service_started
-    networks:
-      - matrimony-net
-
-volumes:
-  db-data:
+    restart: unless-stopped
 
 networks:
   matrimony-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  storage_data:

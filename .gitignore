@@ -1,0 +1,17 @@
+.env
+vendor/
+node_modules/
+storage/sessions/*
+storage/logs/*
+storage/cache/*
+storage/emails/*
+!storage/sessions/.gitkeep
+!storage/logs/.gitkeep
+!storage/cache/.gitkeep
+!storage/emails/.gitkeep
+public_html/uploads/*
+!public_html/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
+.DS_Store
+Thumbs.db
