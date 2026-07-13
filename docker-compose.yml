@@ -1,0 +1,85 @@
+services:
+  app:
+    build: .
+    container_name: matrimony-app
+    ports:
+      - "8082:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: matrimony
+      DB_USERNAME: matrimony_user
+      DB_PASSWORD: matrimony_pass
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      matrimony-net:
+        aliases:
+          - matrimony.local
+
+  db:
+    image: mysql:8.0
+    container_name: matrimony-db
+    restart: unless-stopped
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: matrimony
+      MYSQL_USER: matrimony_user
+      MYSQL_PASSWORD: matrimony_pass
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database/matrimony_complete.sql:/docker-entrypoint-initdb.d/01-matrimony.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - matrimony-net
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: matrimony-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: matrimony_user
+      PMA_PASSWORD: matrimony_pass
+      UPLOAD_LIMIT: 100M
+    depends_on:
+      - db
+    networks:
+      - matrimony-net
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.52.0-noble
+    container_name: matrimony-playwright
+    profiles:
+      - test
+    working_dir: /tests
+    volumes:
+      - ./tests/Browser:/tests
+    environment:
+      BASE_URL: http://matrimony.local:80
+    command: ["sh", "-c", "npm install && npx playwright test"]
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - matrimony-net
+
+volumes:
+  db-data:
+
+networks:
+  matrimony-net:

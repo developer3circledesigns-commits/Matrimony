@@ -1,0 +1,5 @@
+coverage/
+Browser/node_modules/
+Browser/report/
+Browser/test-results/
+Browser/playwright-report/

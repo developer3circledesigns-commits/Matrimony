@@ -1,0 +1,14 @@
+.git
+.gitignore
+.dockerignore
+vendor/
+node_modules/
+storage/sessions/
+storage/logs/
+storage/cache/
+storage/emails/
+tests/
+docs/
+scripts/
+*.md
+.env
