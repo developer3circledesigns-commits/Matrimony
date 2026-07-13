@@ -629,18 +629,7 @@
             clone.querySelectorAll('.filter-trigger').forEach(function(t) {
                 var p = t.querySelector('.filter-panel');
                 if (p) {
-                    p.style.position = 'static';
-                    p.style.boxShadow = 'none';
-                    p.style.border = '1px solid var(--brand-gray-200)';
-                    p.style.borderRadius = '8px';
-                    p.style.marginTop = '0.5rem';
-                    p.style.opacity = '1';
-                    p.style.visibility = 'visible';
-                    p.style.transform = 'none';
-                    p.style.maxHeight = 'none';
-                    p.style.display = 'none';
-                    var footer = p.querySelector('.filter-panel-footer');
-                    if (footer) footer.style.display = 'flex';
+                    p.classList.remove('open');
                 }
                 var btn = t.querySelector('[data-panel]');
                 if (btn) {
@@ -653,11 +642,9 @@
                             var isOpen = panel.classList.contains('open');
                             clone.querySelectorAll('.filter-panel').forEach(function(p) {
                                 p.classList.remove('open');
-                                p.style.display = 'none';
                             });
                             if (!isOpen) {
                                 panel.classList.add('open');
-                                panel.style.display = 'block';
                                 btn.setAttribute('aria-expanded', 'true');
                             } else {
                                 btn.setAttribute('aria-expanded', 'false');
@@ -678,75 +665,14 @@
                 el.oninput = function() { syncFilterFromDOM(); };
             });
 
-            // Step-by-step mode on narrow mobile
+            // Mobile: open first accordion panel by default
             if (window.innerWidth <= 576) {
-                var triggers = content.querySelectorAll('.filter-trigger');
-                var stepPanels = [];
-                var stepLabels = ['Search', 'Age', 'Location', 'Religion', 'More Filters'];
-                var currentStep = 0;
-
-                function showStep(idx) {
-                    stepPanels.forEach(function(p, i) {
-                        p.style.display = i === idx ? 'block' : 'none';
-                        if (i === idx) p.classList.add('open');
-                        else p.classList.remove('open');
-                    });
-                    var fill = content.querySelector('.step-progress-fill');
-                    if (fill) fill.style.width = ((idx + 1) / stepPanels.length * 100) + '%';
-                    var label = content.querySelector('.step-label');
-                    if (label) label.textContent = stepLabels[idx] || 'Filter ' + (idx + 1);
-                    var count = content.querySelector('.step-count');
-                    if (count) count.textContent = (idx + 1) + '/' + stepPanels.length;
-                    var prevBtn = content.querySelector('.btn-step-prev');
-                    if (prevBtn) prevBtn.disabled = idx === 0;
-                    currentStep = idx;
+                var firstPanel = content.querySelector('.filter-panel');
+                if (firstPanel) {
+                    firstPanel.classList.add('open');
+                    var firstBtn = content.querySelector('[data-panel]');
+                    if (firstBtn) firstBtn.setAttribute('aria-expanded', 'true');
                 }
-
-                triggers.forEach(function(t, i) {
-                    var btn = t.querySelector('.filter-trigger-btn, .more-filters-btn');
-                    var panel = t.querySelector('.filter-panel');
-                    if (btn) btn.style.display = 'none';
-                    if (panel) {
-                        panel.style.display = 'none';
-                        panel.classList.remove('open');
-                        stepPanels.push(panel);
-
-                        var footer = panel.querySelector('.filter-panel-footer');
-                        if (footer) {
-                            footer.innerHTML = '';
-                            var stepNav = document.createElement('div');
-                            stepNav.className = 'step-nav';
-                            var navHtml = '<button type="button" class="btn btn-outline-secondary btn-step-prev">Back</button>';
-                            if (i < triggers.length - 1) {
-                                navHtml += '<button type="button" class="btn btn-primary btn-step-next">Next</button>';
-                            } else {
-                                navHtml += '<button type="button" class="btn btn-primary btn-step-finish">Show Results</button>';
-                            }
-                            stepNav.innerHTML = navHtml;
-                            footer.appendChild(stepNav);
-                        }
-                    }
-                });
-
-                // Single global step-bar at top
-                var globalBar = document.createElement('div');
-                globalBar.className = 'step-bar';
-                globalBar.innerHTML = '<div class="step-progress"><div class="step-progress-fill" style="width:0%"></div></div>' +
-                    '<span class="step-label">' + (stepLabels[0] || 'Filter 1') + ' <span class="step-count">1/' + triggers.length + '</span></span>';
-                content.insertBefore(globalBar, content.firstChild);
-
-                if (stepPanels.length > 0) showStep(0);
-
-                if (content._stepHandler) content.removeEventListener('click', content._stepHandler);
-                content._stepHandler = function(e) {
-                    var target = e.target.closest('.btn-step-next');
-                    if (target && currentStep < stepPanels.length - 1) showStep(currentStep + 1);
-                    target = e.target.closest('.btn-step-prev');
-                    if (target && currentStep > 0) showStep(currentStep - 1);
-                    target = e.target.closest('.btn-step-finish');
-                    if (target) { closeMobileDrawer(); loadMatches(1, true); }
-                };
-                content.addEventListener('click', content._stepHandler);
             }
         }
 

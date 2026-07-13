@@ -3530,18 +3530,20 @@ section[id] {
     .filter-mobile-drawer .filter-panel {
         position: static !important;
         box-shadow: none !important;
-        border: 1px solid var(--brand-gray-200) !important;
-        margin-top: 0.5rem !important;
-        opacity: 1 !important;
+        border: none !important;
         visibility: visible !important;
         transform: none !important;
-        max-height: none !important;
     }
     .filter-mobile-drawer .filter-panel.open {
         display: block !important;
+        max-height: 600px !important;
+        opacity: 1 !important;
     }
     .filter-mobile-drawer .filter-panel:not(.open) {
-        display: none !important;
+        max-height: 0 !important;
+        opacity: 0 !important;
+        overflow: hidden !important;
+        padding: 0 1rem !important;
     }
 
     /* Fix filter trigger buttons on mobile */
@@ -3700,55 +3702,110 @@ section[id] {
     }
 }
 
-/* Step-by-step filter navigation */
-.filter-mobile-drawer .step-bar {
-    padding: 0.5rem 0 0.75rem;
-    border-bottom: 1px solid var(--brand-gray-100);
-    margin-bottom: 0.75rem;
-}
-.filter-mobile-drawer .step-progress {
-    height: 4px;
-    background: var(--brand-gray-200);
-    border-radius: 2px;
-    margin-bottom: 0.4rem;
+/* Mobile filter accordion — card-style sections */
+.filter-mobile-drawer .filter-trigger {
+    background: var(--brand-gray-50);
+    border-radius: 10px;
     overflow: hidden;
+    width: 100%;
 }
-.filter-mobile-drawer .step-progress-fill {
-    height: 100%;
-    background: var(--brand-tertiary);
-    border-radius: 2px;
-    transition: width 0.3s ease;
+.filter-mobile-drawer .filter-bar-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
 }
-.filter-mobile-drawer .step-label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--brand-gray-600);
-    display: flex;
-    justify-content: space-between;
-}
-.filter-mobile-drawer .step-count {
-    color: var(--brand-gray-400);
-    font-weight: 500;
-}
-.filter-mobile-drawer .step-nav {
-    display: flex;
+.filter-mobile-drawer .filter-bar-left {
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.5rem;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--brand-gray-100);
+    padding-bottom: 0;
+    width: 100%;
 }
-.filter-mobile-drawer .step-nav .btn {
+.filter-mobile-drawer .filter-trigger-btn,
+.filter-mobile-drawer .more-filters-btn {
+    min-height: 52px;
+    padding: 0.75rem 1rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--brand-gray-800);
+    background: transparent;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease;
+}
+.filter-mobile-drawer .filter-trigger-btn:active,
+.filter-mobile-drawer .more-filters-btn:active {
+    background: var(--brand-gray-100);
+}
+.filter-mobile-drawer .filter-trigger-btn .chevron,
+.filter-mobile-drawer .more-filters-btn .chevron {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--brand-gray-400);
+    transition: transform 0.25s ease;
+}
+.filter-mobile-drawer .filter-trigger-btn[aria-expanded="true"] .chevron,
+.filter-mobile-drawer .more-filters-btn[aria-expanded="true"] .chevron {
+    transform: rotate(180deg);
+}
+.filter-mobile-drawer .filter-trigger-btn .label,
+.filter-mobile-drawer .more-filters-btn .label {
+    font-size: 0.92rem;
     flex: 1;
+    text-align: left;
+}
+.filter-mobile-drawer .filter-trigger-btn .value,
+.filter-mobile-drawer .more-filters-btn .value {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--brand-tertiary);
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.filter-mobile-drawer .filter-panel {
+    border: none !important;
+    border-radius: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 1rem 0.75rem;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    display: block !important;
+}
+.filter-mobile-drawer .filter-panel.open {
+    max-height: 600px;
+    opacity: 1;
+}
+.filter-mobile-drawer .filter-panel-header {
+    padding: 0.75rem 0 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.filter-mobile-drawer .filter-panel-footer {
+    padding: 0.75rem 0 0.25rem;
+    margin-top: 0;
+}
+.filter-mobile-drawer .filter-panel-footer .btn {
     min-height: 44px;
     font-size: 0.85rem;
     font-weight: 600;
+    border-radius: 8px;
+    flex: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
-.filter-mobile-drawer .step-nav .btn:disabled {
-    opacity: 0.4;
-    pointer-events: none;
+.filter-mobile-drawer .filter-panel-content {
+    padding: 0;
 }
 
 .match-card {
