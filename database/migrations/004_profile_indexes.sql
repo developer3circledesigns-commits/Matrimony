@@ -1,2 +1,0 @@
--- Profile Indexes
-CREATE INDEX idx_user_email ON users(email);
