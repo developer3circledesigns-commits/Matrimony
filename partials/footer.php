@@ -1,8 +1,8 @@
 </main>
 <footer class="site-footer">
-    <div class="container py-5">
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6">
+    <div class="container py-3">
+        <div class="row g-2">
+            <div class="col-lg-4 col-md">
                 <a href="/" class="footer-brand mb-3 d-inline-block">
                     <img src="/assets/Top_nav_logo_1.png" alt="Matrimony Logo" width="200" height="55">
                 </a>

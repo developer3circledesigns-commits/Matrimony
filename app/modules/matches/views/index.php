@@ -21,7 +21,7 @@
         </div>
     </div>
 </div>
-<?php endif; ?>
+<?php else: ?>
 
     <!-- Filter Section (sticky) -->
     <div class="filter-sticky">
@@ -462,4 +462,5 @@
 
 <!-- Toast Container -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container" aria-live="polite" aria-relevant="additions"></div>
+<?php endif; ?>
 </div>
