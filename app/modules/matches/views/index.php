@@ -23,13 +23,15 @@
 </div>
 <?php endif; ?>
 
+    <!-- Filter Section (sticky) -->
+    <div class="filter-sticky">
+
     <!-- Mobile Filter Toggle -->
     <button type="button" class="filter-mobile-toggle d-lg-none" onclick="openMobileDrawer()" aria-label="Open filter options" data-testid="open-filters">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
         Filters
         <span class="filter-count-badge" id="mobileFilterCount" aria-hidden="true">0</span>
     </button>
-
     <!-- Quick Preset Chips -->
     <div class="quick-chips" role="group" aria-label="Quick filter presets">
         <button type="button" class="quick-chip active" data-preset="all" aria-pressed="true">
@@ -54,7 +56,7 @@
         </button>
     </div>
 
-    <!-- Horizontal Filter Bar (sticky) -->
+    <!-- Horizontal Filter Bar -->
     <form id="filter-form" class="filter-bar" autocomplete="off" role="search" aria-label="Filter matches" data-testid="filter-sidebar">
         <div class="filter-bar-row">
             <div class="filter-bar-left" id="filterTriggers">
@@ -351,6 +353,7 @@
         <!-- Active Filter Pills -->
         <div class="active-filters" id="activeFilters" aria-label="Active filters"></div>
     </form>
+    </div> <!-- .filter-sticky -->
 
     <!-- Results Header -->
     <div class="results-header">
@@ -433,6 +436,10 @@
         <button type="button" class="drawer-close" onclick="closeMobileDrawer()" aria-label="Close filters">&times;</button>
     </div>
     <div id="mobileDrawerContent"></div>
+    <div class="drawer-footer d-lg-none">
+        <button type="button" class="btn btn-outline-secondary drawer-clear-all" onclick="clearAllFilters(); closeMobileDrawer(); loadMatches(1,true);">Clear All</button>
+        <button type="button" class="btn btn-primary drawer-apply" onclick="closeMobileDrawer(); loadMatches(1,true);">Show Results</button>
+    </div>
 </div>
 
 <!-- Profile Quick View Modal -->

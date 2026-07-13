@@ -677,6 +677,77 @@
                 el.onchange = function() { syncFilterFromDOM(); };
                 el.oninput = function() { syncFilterFromDOM(); };
             });
+
+            // Step-by-step mode on narrow mobile
+            if (window.innerWidth <= 576) {
+                var triggers = content.querySelectorAll('.filter-trigger');
+                var stepPanels = [];
+                var stepLabels = ['Search', 'Age', 'Location', 'Religion', 'More Filters'];
+                var currentStep = 0;
+
+                function showStep(idx) {
+                    stepPanels.forEach(function(p, i) {
+                        p.style.display = i === idx ? 'block' : 'none';
+                        if (i === idx) p.classList.add('open');
+                        else p.classList.remove('open');
+                    });
+                    var fill = content.querySelector('.step-progress-fill');
+                    if (fill) fill.style.width = ((idx + 1) / stepPanels.length * 100) + '%';
+                    var label = content.querySelector('.step-label');
+                    if (label) label.textContent = stepLabels[idx] || 'Filter ' + (idx + 1);
+                    var count = content.querySelector('.step-count');
+                    if (count) count.textContent = (idx + 1) + '/' + stepPanels.length;
+                    var prevBtn = content.querySelector('.btn-step-prev');
+                    if (prevBtn) prevBtn.disabled = idx === 0;
+                    currentStep = idx;
+                }
+
+                triggers.forEach(function(t, i) {
+                    var btn = t.querySelector('.filter-trigger-btn, .more-filters-btn');
+                    var panel = t.querySelector('.filter-panel');
+                    if (btn) btn.style.display = 'none';
+                    if (panel) {
+                        panel.style.display = 'none';
+                        panel.classList.remove('open');
+                        stepPanels.push(panel);
+
+                        var footer = panel.querySelector('.filter-panel-footer');
+                        if (footer) {
+                            footer.innerHTML = '';
+                            var stepNav = document.createElement('div');
+                            stepNav.className = 'step-nav';
+                            var navHtml = '<button type="button" class="btn btn-outline-secondary btn-step-prev">Back</button>';
+                            if (i < triggers.length - 1) {
+                                navHtml += '<button type="button" class="btn btn-primary btn-step-next">Next</button>';
+                            } else {
+                                navHtml += '<button type="button" class="btn btn-primary btn-step-finish">Show Results</button>';
+                            }
+                            stepNav.innerHTML = navHtml;
+                            footer.appendChild(stepNav);
+                        }
+                    }
+                });
+
+                // Single global step-bar at top
+                var globalBar = document.createElement('div');
+                globalBar.className = 'step-bar';
+                globalBar.innerHTML = '<div class="step-progress"><div class="step-progress-fill" style="width:0%"></div></div>' +
+                    '<span class="step-label">' + (stepLabels[0] || 'Filter 1') + ' <span class="step-count">1/' + triggers.length + '</span></span>';
+                content.insertBefore(globalBar, content.firstChild);
+
+                if (stepPanels.length > 0) showStep(0);
+
+                if (content._stepHandler) content.removeEventListener('click', content._stepHandler);
+                content._stepHandler = function(e) {
+                    var target = e.target.closest('.btn-step-next');
+                    if (target && currentStep < stepPanels.length - 1) showStep(currentStep + 1);
+                    target = e.target.closest('.btn-step-prev');
+                    if (target && currentStep > 0) showStep(currentStep - 1);
+                    target = e.target.closest('.btn-step-finish');
+                    if (target) { closeMobileDrawer(); loadMatches(1, true); }
+                };
+                content.addEventListener('click', content._stepHandler);
+            }
         }
 
         overlay.classList.add('active');

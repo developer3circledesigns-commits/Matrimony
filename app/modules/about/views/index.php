@@ -60,7 +60,7 @@
     </div>
 </section>
 
-<!-- Team Section -->
+<!-- Team Section
 <section id="team" class="members-section">
     <div class="container">
         <div class="row justify-content-center">
@@ -108,7 +108,7 @@
             </div>
         </div>
     </div>
-</section>
+</section> -->
 
 <!-- Statistics Section -->
 <section class="section-lg bg-brand-secondary">
