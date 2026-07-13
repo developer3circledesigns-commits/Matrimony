@@ -4,11 +4,11 @@
  * Connection is established lazily by Matrimony\Database\Connection.
  */
 return [
-    'host'      => getenv('DB_HOST') ?: 'localhost',
-    'port'      => (int) (getenv('DB_PORT') ?: 3306),
-    'database'  => getenv('DB_DATABASE') ?: 'matrimony',
-    'username'  => getenv('DB_USERNAME') ?: 'matrimony_user',
-    'password'  => getenv('DB_PASSWORD') ?: 'matrimony_pass',
+    'host'      => getenv('DB_HOST'),
+    'port'      => (int) getenv('DB_PORT'),
+    'database'  => getenv('DB_DATABASE'),
+    'username'  => getenv('DB_USERNAME'),
+    'password'  => getenv('DB_PASSWORD'),
     'charset'   => 'utf8mb4',
     'collation' => 'utf8mb4_unicode_ci',
 ];
