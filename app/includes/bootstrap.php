@@ -79,19 +79,19 @@ foreach (['sessions', 'logs', 'cache', 'emails'] as $dir) {
 session_save_path(STORAGE_PATH . '/sessions');
 
 if (session_status() === PHP_SESSION_NONE) {
-    $cookieParams = [
+    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (int) ($_SERVER['SERVER_PORT'] ?? 80) === 443;
+
+    session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
         'domain'   => '',
-        'secure'   => $detectedEnv === 'production' && !empty($_SERVER['HTTPS']),
-        'httponly' => $env === 'production',
-    ];
-    if ($env !== 'local') {
-        $cookieParams['samesite'] = 'Lax';
-    }
-    session_set_cookie_params($cookieParams);
-    ini_set('session.use_trans_sid', $env === 'local' ? '1' : '0');
-    ini_set('session.use_only_cookies', $env === 'production' ? '1' : '0');
+        'secure'   => $isSecure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    ini_set('session.use_trans_sid', '0');
+    ini_set('session.use_only_cookies', '1');
     session_start();
 }
 

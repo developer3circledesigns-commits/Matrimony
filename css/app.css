@@ -1518,7 +1518,26 @@ textarea.form-control {
     transition: color 0.2s ease, padding-left 0.2s ease;
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    line-height: 1.3;
+}
+
+.footer-contact-list {
+    margin: 0;
+    padding: 0;
+}
+
+.footer-contact-list li {
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+.footer-contact-address {
+    word-spacing: -0.2em;
+}
+
+.footer-contact-hours {
+    color: var(--brand-gray-600);
 }
 
 .footer-links a:hover {
@@ -1543,7 +1562,7 @@ textarea.form-control {
 }
 
 .footer-contact li span {
-    word-spacing: -0.05em;
+    word-spacing: -0.15em;
 }
 .footer-contact li svg {
     flex-shrink: 0;

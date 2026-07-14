@@ -1,0 +1,2 @@
+-- Matrimony database initialization
+-- Add your schema here

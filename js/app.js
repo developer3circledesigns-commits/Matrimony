@@ -1673,7 +1673,6 @@
                     var v = regPassword.value;
                     var s = '';
                     if (v.length < 8) { s = 'Too short'; pwStrength.className = 'text-danger'; }
-                    else if (!/[A-Z]/.test(v)) { s = 'Missing uppercase letter'; pwStrength.className = 'text-warning'; }
                     else if (!/[a-z]/.test(v)) { s = 'Missing lowercase letter'; pwStrength.className = 'text-warning'; }
                     else if (!/[0-9]/.test(v)) { s = 'Missing number'; pwStrength.className = 'text-warning'; }
                     else { s = 'Strong password'; pwStrength.className = 'text-success'; }
