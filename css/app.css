@@ -1533,7 +1533,8 @@ textarea.form-control {
 }
 
 .footer-contact-address {
-    word-spacing: -0.2em;
+    word-spacing: 0.2em;
+    max-width: 280px;
 }
 
 .footer-contact-hours {
@@ -1599,6 +1600,13 @@ textarea.form-control {
 @media (max-width: 767.98px) {
     .site-footer {
         text-align: center;
+    }
+    .footer-contact-address {
+    word-spacing: 0.2em;
+    max-width: 280px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
     }
     .site-footer .row {
         gap: 24px;
@@ -1676,6 +1684,13 @@ section[id] {
 @media (max-width: 575.98px) {
     section[id] {
         scroll-margin-top: 68px;
+    }
+    .footer-contact-address {
+    word-spacing: 0.2em;
+    max-width: 280px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
     }
 }
 
@@ -1887,6 +1902,13 @@ section[id] {
     }
     body {
         padding-top: 56px;
+    }
+    .footer-contact-address {
+    word-spacing: 0.2em;
+    max-width: 280px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
     }
 }
 
