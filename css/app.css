@@ -2854,12 +2854,12 @@ section[id] {
         transform: none;
     }
     .testimonials-section .carousel-control-prev {
-        right: 50px;
-        left: auto;
-    }
-    .testimonials-section .carousel-control-next {
         left: 50px;
         right: auto;
+    }
+    .testimonials-section .carousel-control-next {
+        right: 50px;
+        left: auto;
     }
     .testimonials-section .carousel {
         padding-bottom: 4rem;
