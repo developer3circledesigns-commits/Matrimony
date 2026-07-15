@@ -1656,6 +1656,10 @@ textarea.form-control {
     .footer-bottom .row {
         gap: 10px;
     }
+    .footer-contact-hours {
+    color: var(--brand-gray-600);
+    text-align: center;
+}
 }
 
 /* Utilities */
@@ -1692,6 +1696,10 @@ section[id] {
     margin-left: auto;
     margin-right: auto;
     }
+    .footer-contact-hours {
+    color: var(--brand-gray-600);
+    text-align: center;
+}
 }
 
 /* Focus visible for accessibility */
@@ -1910,6 +1918,10 @@ section[id] {
     margin-left: auto;
     margin-right: auto;
     }
+    .footer-contact-hours {
+    color: var(--brand-gray-600);
+    text-align: center;
+}
 }
 
 .nav-link {

@@ -67,7 +67,7 @@
                     <p class="mb-0">&copy; <?= date('Y') ?> Matrimony. All rights reserved.</p>
                 </div>
                 <div class="col-auto text-center text-md-end ms-auto">
-                    <p class="mb-0">Designed and Developed By <a href="https://thecircledesigns.com/" target="_blank"  style="text-decoration: none; color: inherit;">Circle Designs</a></p>
+                    <p class="mb-0">Designed and Developed By <a href="https://thecircledesigns.com/" target="_blank"  style="text-decoration: underline; color: inherit;">Circle Designs</a></p>
                 </div>
             </div>
         </div>
