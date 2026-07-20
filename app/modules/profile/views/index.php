@@ -312,7 +312,14 @@ $gender = $p['gender'] ?? '';
                                     <option value="divorced" <?= ($p['marital_status'] ?? '') === 'divorced' ? 'selected' : '' ?>>Divorced</option>
                                     <option value="widowed" <?= ($p['marital_status'] ?? '') === 'widowed' ? 'selected' : '' ?>>Widowed</option>
                                     <option value="awaiting_divorce" <?= ($p['marital_status'] ?? '') === 'awaiting_divorce' ? 'selected' : '' ?>>Awaiting Divorce</option>
-                                </select>
+                                    </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Height</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="height_cm" value="<?= e($p['height_cm'] ?? '') ?>" inputmode="numeric" pattern="[0-9]*">
+                                    <span class="input-group-text">cm</span>
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Weight</label>
