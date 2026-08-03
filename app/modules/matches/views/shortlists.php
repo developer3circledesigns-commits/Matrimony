@@ -28,7 +28,7 @@
                     <div class="card-body d-flex align-items-center gap-3 p-3">
                         <div class="flex-shrink-0">
                             <?php if (!empty($v['primary_photo'])): ?>
-                            <img src="<?= e($v['primary_photo']) ?>" alt="" class="rounded-circle" width="56" height="56" style="object-fit:cover">
+                            <img src="<?= e($v['primary_photo']) ?>" alt="" class="list-avatar rounded-circle" width="56" height="56">
                             <?php else: ?>
                             <div class="rounded-circle d-flex align-items-center justify-content-center bg-warning-subtle text-warning fw-bold" style="width:56px;height:56px;font-size:1.25rem"><?= e(strtoupper(substr($v['first_name'] ?? '?', 0, 1))) ?></div>
                             <?php endif; ?>

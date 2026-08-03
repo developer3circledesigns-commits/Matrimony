@@ -1085,7 +1085,9 @@
         body.innerHTML =
             '<div class="row">' +
                 '<div class="col-md-5">' +
-                    '<img src="' + photo + '" class="img-fluid" alt="Photo of ' + fullName + '" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
+                    '<div class="profile-modal-photo-wrap">' +
+                        '<img src="' + photo + '" class="profile-modal-photo" alt="Photo of ' + fullName + '" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
+                    '</div>' +
                 '</div>' +
                 '<div class="col-md-7">' +
                     '<h3>' + fullName + '</h3>' +
@@ -1621,7 +1623,7 @@
                     '<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">' +
                     '<div class="modal-content" style="border-radius:14px;overflow:hidden;border:none">' +
                     '<div style="background:linear-gradient(135deg,#2d1656,#9565be);color:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px">' +
-                    '<img src="' + photo + '" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.4)" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
+                    '<img src="' + photo + '" alt="" class="profile-thumb-sm" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
                     '<div style="flex:1"><h5 style="margin:0;font-size:16px;font-weight:600">' + fullName + '</h5>' +
                     '<p style="margin:2px 0 0;font-size:12px;opacity:.85">' + (p.age || '') + ' yrs &middot; ' + escapeHtml(p.religion || '') + ' &middot; ' + escapeHtml(p.city || '') + '</p></div>' +
                     '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="font-size:14px"></button></div>' +

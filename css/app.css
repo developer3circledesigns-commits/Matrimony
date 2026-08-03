@@ -3953,14 +3953,67 @@ section[id] {
 }
 
 .match-photo img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
+    max-width: none;
     object-fit: cover;
+    object-position: center top;
     transition: transform 0.3s ease;
 }
 
 .match-card:hover .match-photo img {
-    transform: scale(1.05);
+    transform: scale(1.03);
+}
+
+/* Shared profile / avatar image crop — face-biased (top) */
+.profile-thumb,
+.list-avatar,
+.public-profile-photo,
+.profile-modal-photo {
+    object-fit: cover;
+    object-position: center top;
+    max-width: none;
+}
+
+.list-avatar {
+    width: 56px;
+    height: 56px;
+    display: block;
+}
+
+.public-profile-photo {
+    width: 150px;
+    height: 150px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.profile-modal-photo-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: var(--brand-secondary, #f3eef8);
+}
+
+.profile-modal-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.profile-thumb-sm {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    object-position: center top;
+    max-width: none;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.4);
 }
 
 .match-overlay {
@@ -3971,6 +4024,7 @@ section[id] {
     background: linear-gradient(transparent, rgba(45, 22, 86, 0.9));
     padding: 1rem 0.5rem 0.5rem;
     color: white;
+    z-index: 2;
 }
 
 .match-name {
@@ -4486,7 +4540,9 @@ section[id] {
 .profile-avatar {
     width: 120px;
     height: 120px;
+    max-width: none;
     object-fit: cover;
+    object-position: center top;
     border: 3px solid var(--brand-tertiary);
 }
 .profile-avatar-placeholder {
@@ -4640,11 +4696,13 @@ section[id] {
 .photo-card img {
     width: 100%;
     height: 200px;
+    max-width: none;
     object-fit: cover;
+    object-position: center top;
     transition: transform .3s;
 }
 .photo-card:hover img {
-    transform: scale(1.05);
+    transform: scale(1.03);
 }
 .photo-card .photo-overlay {
     position: absolute;
@@ -4755,19 +4813,24 @@ section[id] {
 }
 
 .rjm-photo img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
+    max-width: none;
     object-fit: cover;
-    object-position: center center;
+    object-position: center top;
     display: block;
     transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .rjm-card:hover .rjm-photo img {
-    transform: scale(1.08);
+    transform: scale(1.03);
 }
 
 .rjm-initials {
+    position: relative;
+    z-index: 1;
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--brand-primary);

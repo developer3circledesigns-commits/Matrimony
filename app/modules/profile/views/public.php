@@ -34,7 +34,7 @@ $heightFt = $heightCm ? floor($heightCm / 30.48) . "'" . round(fmod($heightCm, 3
             <div class="card shadow-sm mb-4 overflow-hidden">
                 <div class="row g-0">
                     <div class="col-md-4 text-center p-4 bg-light">
-                        <img src="<?= e($photo) ?>" alt="" class="img-fluid mb-3" style="width:150px;height:150px;object-fit:cover;" onerror="this.src='<?= $placeholder ?>'">
+                        <img src="<?= e($photo) ?>" alt="" class="public-profile-photo mb-3" onerror="this.src='<?= $placeholder ?>'">
                         <h4 class="mb-1"><?= $name ?></h4>
                         <p class="text-muted mb-0"><?= $age ?> yrs</p>
                         <?php if (!empty($p['is_verified'])): ?>
