@@ -15,7 +15,7 @@ $params = $_SERVER['API_PARAMS'] ?? [];
 // GET — list photos (already included in full profile)
 if (Request::is('GET')) {
     $pdo = \Matrimony\Database\Connection::pdo();
-    $stmt = $pdo->prepare("SELECT * FROM profile_photos WHERE user_id = :uid ORDER BY is_primary DESC, id ASC");
+    $stmt = $pdo->prepare("SELECT id, path, is_primary, privacy_level, status, caption, created_at FROM profile_photos WHERE user_id = :uid ORDER BY is_primary DESC, id ASC");
     $stmt->execute([':uid' => $userId]);
     echo json_encode(['success' => true, 'data' => $stmt->fetchAll()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
@@ -55,14 +55,7 @@ if (Request::is('POST')) {
         } elseif (!in_array($ext, $allowed)) {
             $reason = 'File extension "' . $ext . '" not allowed';
         } else {
-            $dir = BASE_PATH . '/uploads/' . $userId;
-            if (!is_dir($dir)) {
-                $reason = 'Could not create directory: ' . $dir;
-            } elseif (!is_writable($dir)) {
-                $reason = 'Directory not writable: ' . $dir;
-            } else {
-                $reason = 'move_uploaded_file failed (tmp: ' . $f['tmp_name'] . ', size: ' . $f['size'] . ' bytes)';
-            }
+            $reason = 'Image validation failed (format, size, or content)';
         }
         echo json_encode(['success' => false, 'error' => 'Upload failed: ' . $reason, 'debug' => [
             'file_size_bytes' => $f['size'],

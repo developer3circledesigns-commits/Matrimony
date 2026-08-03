@@ -564,22 +564,13 @@ final class ProfileService
 
         if (!@getimagesize($file['tmp_name'])) return null;
 
+        $imageData = file_get_contents($file['tmp_name']);
+        if ($imageData === false) return null;
+
         $pdo = Connection::pdo();
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM profile_photos WHERE user_id = :uid");
         $stmt->execute([':uid' => $userId]);
         if ((int) $stmt->fetchColumn() >= 20) return null;
-
-        $dir = BASE_PATH . '/uploads/' . $userId;
-        if (!is_dir($dir)) mkdir($dir, 0755, true);
-
-        $filename = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-        $dest = $dir . '/' . $filename;
-        if (!move_uploaded_file($file['tmp_name'], $dest)) {
-            $this->logError('move_uploaded_file failed', ['user_id' => $userId, 'tmp' => $file['tmp_name'], 'dest' => $dest]);
-            return null;
-        }
-
-        $path = '/uploads/' . $userId . '/' . $filename;
 
         $pdo->beginTransaction();
         try {
@@ -587,16 +578,24 @@ final class ProfileService
             $stmt->execute([':uid' => $userId]);
             $isPrimary = (int) $stmt->fetchColumn() === 0 ? 1 : 0;
 
-            $stmt = $pdo->prepare("INSERT INTO profile_photos (user_id, path, is_primary, status) VALUES (:uid, :path, :pri, 'approved')");
-            $stmt->execute([':uid' => $userId, ':path' => $path, ':pri' => $isPrimary]);
+            $stmt = $pdo->prepare("INSERT INTO profile_photos (user_id, path, image_data, image_mime, is_primary, status) VALUES (:uid, '', :data, :mime, :pri, 'approved')");
+            $stmt->execute([
+                ':uid'  => $userId,
+                ':data' => $imageData,
+                ':mime' => $mime,
+                ':pri'  => $isPrimary,
+            ]);
             $photoId = (int) $pdo->lastInsertId();
+
+            $servePath = '/api/photo?id=' . $photoId;
+            $stmt = $pdo->prepare("UPDATE profile_photos SET path = :path WHERE id = :id");
+            $stmt->execute([':path' => $servePath, ':id' => $photoId]);
 
             $pdo->commit();
             $this->logActivity($userId, 'photo.uploaded', ['photo_id' => $photoId]);
-            return ['id' => $photoId, 'path' => $path, 'is_primary' => (bool) $isPrimary];
+            return ['id' => $photoId, 'path' => $servePath, 'is_primary' => (bool) $isPrimary];
         } catch (\Throwable $e) {
             $pdo->rollBack();
-            @unlink($dest);
             $this->logError('addPhoto transaction failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
             return null;
         }
@@ -608,16 +607,13 @@ final class ProfileService
 
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare("SELECT path, is_primary FROM profile_photos WHERE id = :id AND user_id = :uid FOR UPDATE");
+            $stmt = $pdo->prepare("SELECT id, is_primary FROM profile_photos WHERE id = :id AND user_id = :uid FOR UPDATE");
             $stmt->execute([':id' => $photoId, ':uid' => $userId]);
             $photo = $stmt->fetch();
             if (!$photo) {
                 $pdo->rollBack();
                 return false;
             }
-
-            $file = BASE_PATH . $photo['path'];
-            if (is_file($file)) unlink($file);
 
             $stmt = $pdo->prepare("DELETE FROM profile_photos WHERE id = :id");
             $stmt->execute([':id' => $photoId]);

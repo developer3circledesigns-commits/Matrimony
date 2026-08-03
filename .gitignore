@@ -10,5 +10,6 @@ app/storage/emails/*
 !app/storage/emails/.gitkeep
 uploads/*
 !uploads/.gitkeep
+.env
 .DS_Store
 Thumbs.db
