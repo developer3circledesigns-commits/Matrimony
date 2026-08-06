@@ -46,7 +46,6 @@ function isActiveNav($path, $currentPath) {
                         <a class="nav-link <?= isActiveNav('/', $currentPath) ?>" href="/">Home</a>
                         <a class="nav-link <?= isActiveNav('/about', $currentPath) ?>" href="/about">About Us</a>
                         <a class="nav-link <?= isActiveNav('/matches', $currentPath) ?>" href="/matches">Profile Matches</a>
-                        <a class="nav-link <?= isActiveNav('/packages', $currentPath) ?>" href="/packages">Packages</a>
                         <a class="nav-link <?= isActiveNav('/contact', $currentPath) ?>" href="/contact">Contact</a>
                         <div class="navbar-divider"></div>
                         <?php if ($isLoggedIn): ?>

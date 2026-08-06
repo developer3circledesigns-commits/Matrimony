@@ -1,0 +1,1 @@
+ALTER TABLE profiles ADD COLUMN phones TEXT NULL AFTER phone;

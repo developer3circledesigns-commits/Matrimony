@@ -30,7 +30,6 @@
                     <li><a href="/matches">Profile Matches</a></li>
                     <li><a href="/about">About Us</a></li>
                     <li><a href="<?= !empty($_SESSION['user_id']) ? '/profile' : '/users/login' ?>">Profile</a></li>
-                    <li><a href="/packages">Packages</a></li>
                     <li><a href="/contact">Contact Us</a></li>
                 </ul>
             </div>

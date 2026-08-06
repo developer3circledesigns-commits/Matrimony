@@ -116,7 +116,7 @@
                                 <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq11">How do I upgrade to a premium plan?</button>
                             </h2>
                             <div id="faq11" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body text-muted">Visit the Packages page to view all available plans. Choose the plan that suits your needs and follow the secure payment process. Once your payment is confirmed, premium features will be activated immediately on your account.</div>
+                                <div class="accordion-body text-muted">Please contact our support team for assistance with premium plans. Our team will guide you through the available options and the activation process for your account.</div>
                             </div>
                         </div>
                         <div class="accordion-item border-0 mb-3 shadow-sm" data-faq-search>

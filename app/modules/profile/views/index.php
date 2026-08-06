@@ -38,6 +38,13 @@
 $p = $profile;
 $name = e($p['first_name'] ?? '') . ' ' . e($p['last_name'] ?? '');
 $photo = $p['primary_photo'] ?? '';
+$heightCm = (int) ($p['height_cm'] ?? 0);
+$heightInput = $heightCm ? floor($heightCm / 30.48) . "'" . round(fmod($heightCm, 30.48) / 2.54) . '"' : '';
+$storedPhones = json_decode((string) ($p['phones'] ?? ''), true);
+if (!is_array($storedPhones) || empty($storedPhones)) {
+    $storedPhones = !empty($p['phone']) ? [$p['phone']] : [''];
+}
+if (empty($storedPhones)) $storedPhones = [''];
 $age = $p['age'] ?? 0;
 $completion = $p['completion_percentage'] ?? 0;
 $profileId = $p['profile_id'] ?? '';
@@ -317,9 +324,10 @@ $gender = $p['gender'] ?? '';
                             <div class="col-md-3">
                                 <label class="form-label">Height</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="height_cm" value="<?= e($p['height_cm'] ?? '') ?>" inputmode="numeric" pattern="[0-9]*">
-                                    <span class="input-group-text">cm</span>
+                                    <input type="text" class="form-control" name="height_cm" value="<?= e($heightInput) ?>" placeholder="e.g., 5'8">
+                                    <span class="input-group-text">ft</span>
                                 </div>
+                                <small class="text-muted">Enter height in feet+inches format (e.g., 5'8, 6'2)</small>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Weight</label>
@@ -472,9 +480,17 @@ $gender = $p['gender'] ?? '';
                                 <small class="text-muted">Email cannot be changed here</small>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Phone</label>
-                                <input type="tel" class="form-control" name="phone" value="<?= e($p['phone'] ?? '') ?>" placeholder="+91 98765 43210" maxlength="20">
-                                <small class="text-muted">Visible to matches only</small>
+                                <label class="form-label">Phone Numbers</label>
+                                <div id="phone-list">
+                                    <?php foreach ($storedPhones as $phoneNum): ?>
+                                        <div class="input-group mb-2 phone-row">
+                                            <input type="tel" class="form-control" name="phones[]" value="<?= e($phoneNum) ?>" placeholder="+91 98765 43210" maxlength="20" inputmode="tel">
+                                            <button type="button" class="btn btn-outline-danger phone-remove" tabindex="-1" aria-label="Remove phone number">&times;</button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="add-phone-btn">+ Add Another Number</button>
+                                <small class="text-muted d-block mt-1">Visible to matches only. You can add up to 3 numbers.</small>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">City</label>
@@ -936,7 +952,6 @@ $gender = $p['gender'] ?? '';
                                 <?php else: ?>
                                     <p class="text-muted">Free Member</p>
                                 <?php endif; ?>
-                                <a href="/packages" class="btn btn-sm btn-outline-primary mt-2">Upgrade Plan</a>
                             </div>
                             <hr>
                             <?php if (!empty($p['is_active'])): ?>

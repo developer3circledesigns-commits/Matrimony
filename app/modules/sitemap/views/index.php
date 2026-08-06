@@ -5,7 +5,6 @@
             <li><a href="/">Home</a></li>
             <li><a href="/about">About Us</a></li>
             <li><a href="/profile">Profile</a></li>
-            <li><a href="/packages">Packages</a></li>
             <li><a href="/contact">Contact Us</a></li>
             <li><a href="/search">Search Matrimony</a></li>
             <li><a href="/faq">FAQ</a></li>

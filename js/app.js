@@ -1247,12 +1247,138 @@
 
     var profileSubmitting = false;
 
+    var MAX_PHONES = 3;
+
+    function validatePhones(form) {
+        var inputs = form.querySelectorAll('input[name="phones[]"]');
+        var errors = [];
+        var seen = {};
+        var count = 0;
+
+        inputs.forEach(function (input) {
+            input.classList.remove('is-invalid');
+            var v = input.value.trim();
+            if (!v) return;
+            count++;
+            if (v.length > 20) {
+                errors.push('Phone number must be at most 20 characters.');
+                input.classList.add('is-invalid');
+                return;
+            }
+            var normalized = v.replace(/[\s\-().]/g, '');
+            if (!/^\+?\d{7,15}$/.test(normalized)) {
+                errors.push('Phone number must contain 7-15 digits with an optional + prefix.');
+                input.classList.add('is-invalid');
+                return;
+            }
+            if (normalized.length === 10 && normalized[0] !== '+' && !/^[6-9]/.test(normalized)) {
+                errors.push('10-digit phone numbers must start with 6-9.');
+                input.classList.add('is-invalid');
+                return;
+            }
+            if (seen[normalized]) {
+                errors.push('Phone numbers must not be duplicated.');
+                input.classList.add('is-invalid');
+                return;
+            }
+            seen[normalized] = true;
+        });
+
+        if (count > MAX_PHONES) {
+            errors.push('You can add up to ' + MAX_PHONES + ' phone numbers.');
+        }
+        return errors;
+    }
+
+    function initPhoneInputs(page) {
+        var list = page.querySelector('#phone-list');
+        var addBtn = page.querySelector('#add-phone-btn');
+        if (!list) return;
+
+        var inputs = function () {
+            return list.querySelectorAll('.phone-row');
+        };
+
+        list.querySelectorAll('.phone-remove').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (inputs().length <= 1) {
+                    var first = list.querySelector('input[name="phones[]"]');
+                    if (first) {
+                        first.value = '';
+                        first.focus();
+                    }
+                    return;
+                }
+                this.closest('.phone-row').remove();
+                updateAddBtn();
+            });
+        });
+
+        function createPhoneRow(value) {
+            var row = document.createElement('div');
+            row.className = 'input-group mb-2 phone-row';
+
+            var input = document.createElement('input');
+            input.type = 'tel';
+            input.className = 'form-control';
+            input.name = 'phones[]';
+            input.value = value || '';
+            input.placeholder = '+91 98765 43210';
+            input.maxLength = 20;
+            input.inputMode = 'tel';
+            input.addEventListener('input', function () {
+                input.classList.remove('is-invalid');
+            });
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-outline-danger phone-remove';
+            btn.tabIndex = -1;
+            btn.setAttribute('aria-label', 'Remove phone number');
+            btn.innerHTML = '&times;';
+            btn.addEventListener('click', function () {
+                if (inputs().length <= 1) {
+                    input.value = '';
+                    input.focus();
+                    return;
+                }
+                row.remove();
+                updateAddBtn();
+            });
+
+            row.appendChild(input);
+            row.appendChild(btn);
+            return row;
+        }
+
+        function updateAddBtn() {
+            if (addBtn) {
+                addBtn.disabled = inputs().length >= MAX_PHONES;
+                addBtn.textContent = inputs().length >= MAX_PHONES
+                    ? 'Maximum ' + MAX_PHONES + ' numbers reached'
+                    : '+ Add Another Number';
+            }
+        }
+
+        if (addBtn) {
+            addBtn.addEventListener('click', function () {
+                if (inputs().length >= MAX_PHONES) return;
+                list.appendChild(createPhoneRow(''));
+                updateAddBtn();
+            });
+        }
+
+        updateAddBtn();
+    }
+
     function initProfilePage() {
         var page = document.querySelector('.profile-page');
         if (!page) return;
 
         var csrf = page.dataset.csrf || '';
         var userId = page.dataset.userId || '';
+
+        initPhoneInputs(page);
 
         page.querySelectorAll('.profile-section-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
@@ -1262,7 +1388,15 @@
                 var section = form.dataset.section;
                 var data = {};
                 new FormData(form).forEach(function (val, key) {
-                    if (key !== 'section') data[key] = val;
+                    if (key !== 'section') {
+                        if (key.endsWith('[]')) {
+                            var base = key.slice(0, -2);
+                            if (!data[base]) data[base] = [];
+                            data[base].push(val);
+                        } else {
+                            data[key] = val;
+                        }
+                    }
                 });
                 // Exclude disabled fields so they aren't sent
                 form.querySelectorAll('[disabled]').forEach(function (el) {
@@ -1276,6 +1410,14 @@
                     if (!required[i].value.trim()) {
                         showToast('Please fill in all required fields.', 'danger');
                         required[i].focus();
+                        return;
+                    }
+                }
+
+                if (section === 'personal') {
+                    var phoneErrors = validatePhones(form);
+                    if (phoneErrors.length > 0) {
+                        showToast(phoneErrors[0], 'danger');
                         return;
                     }
                 }

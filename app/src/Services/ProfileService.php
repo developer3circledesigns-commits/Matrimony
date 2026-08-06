@@ -6,6 +6,8 @@ use Matrimony\Http\Auth;
 
 final class ProfileService
 {
+    private const MAX_PHONES = 3;
+
     private const VALIDATION_RULES = [
         'first_name'       => ['maxlen' => 100, 'trim' => true, 'strip' => true],
         'last_name'        => ['maxlen' => 100, 'trim' => true, 'strip' => true],
@@ -16,7 +18,7 @@ final class ProfileService
         'caste'            => ['maxlen' => 100, 'trim' => true, 'strip' => true],
         'sub_caste'        => ['maxlen' => 100, 'trim' => true, 'strip' => true],
         'mother_tongue'    => ['maxlen' => 50, 'trim' => true, 'strip' => true],
-        'height_cm'        => ['numeric' => true, 'min' => 50, 'max' => 280],
+        'height_cm'        => ['pattern' => '/^\d+\'\d+\"$|\d+\'\d+$/', 'maxlen' => 20],
         'weight_kg'        => ['numeric' => true, 'min' => 10, 'max' => 350],
         'education'        => ['maxlen' => 200, 'trim' => true, 'strip' => true],
         'institution'      => ['maxlen' => 200, 'trim' => true, 'strip' => true],
@@ -167,17 +169,33 @@ final class ProfileService
     public function updatePersonal(int $userId, array $data): string|true
     {
         $data = $this->sanitize($data);
+
+        $syncPhones = array_key_exists('phones', $data) || array_key_exists('phone', $data);
+        if ($syncPhones) {
+            $phones = $this->processPhones($data);
+            if (is_string($phones)) {
+                $this->logError('updatePersonal phone validation failed', ['user_id' => $userId, 'error' => $phones]);
+                return $phones;
+            }
+            $data['phones'] = json_encode($phones, JSON_UNESCAPED_UNICODE);
+            $data['phone']  = $phones[0] ?? '';
+        }
+
         $errors = $this->validate($data, [
                 'first_name', 'last_name', 'date_of_birth', 'gender', 'marital_status',
                 'religion', 'caste', 'sub_caste', 'mother_tongue',
                 'height_cm', 'weight_kg', 'education', 'institution', 'occupation', 'company',
-                'annual_income', 'city', 'state', 'country', 'phone', 'work_location',
+                'annual_income', 'city', 'state', 'country', 'work_location',
             'about_me', 'has_children', 'created_by',
         ]);
         if (!empty($errors)) {
             $msg = 'Validation failed: ' . implode('; ', array_map(fn($f, $e) => "$f: $e", array_keys($errors), $errors));
             $this->logError('updatePersonal validation failed', ['user_id' => $userId, 'errors' => $errors]);
             return $msg;
+        }
+
+        if (array_key_exists('height_cm', $data) && $data['height_cm'] !== '') {
+            $data['height_cm'] = $this->heightToCm($data['height_cm']);
         }
 
         $pdo = Connection::pdo();
@@ -187,7 +205,7 @@ final class ProfileService
                 'first_name', 'last_name', 'date_of_birth', 'gender', 'marital_status',
                 'religion', 'caste', 'sub_caste', 'mother_tongue',
                 'height_cm', 'weight_kg', 'education', 'institution', 'occupation', 'company',
-            'annual_income', 'city', 'state', 'country', 'phone', 'work_location',
+            'annual_income', 'city', 'state', 'country', 'work_location',
                 'about_me', 'has_children', 'created_by',
             ];
             $profileSets = [];
@@ -198,6 +216,12 @@ final class ProfileService
                     $profileSets[] = "{$f} = :{$f}";
                     $profileParams[":{$f}"] = $data[$f];
                 }
+            }
+            if ($syncPhones) {
+                $profileSets[] = "phones = :phones";
+                $profileParams[':phones'] = $data['phones'];
+                $profileSets[] = "phone = :phone";
+                $profileParams[':phone'] = $data['phone'];
             }
             if (!empty($profileSets)) {
                 $sql = "UPDATE profiles SET " . implode(', ', $profileSets) . " WHERE user_id = :uid";
@@ -226,7 +250,7 @@ final class ProfileService
         } catch (\Throwable $e) {
             $pdo->rollBack();
             $this->logError('updatePersonal failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return false;
+            return 'Failed to save profile: ' . $e->getMessage();
         }
     }
 
@@ -262,7 +286,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updateFamily failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return false;
+            return 'Failed to save family details: ' . $e->getMessage();
         }
     }
 
@@ -303,7 +327,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updateLifestyle failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return false;
+            return 'Failed to save lifestyle details: ' . $e->getMessage();
         }
     }
 
@@ -333,7 +357,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updateHoroscope failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return false;
+            return 'Failed to save horoscope details: ' . $e->getMessage();
         }
     }
 
@@ -383,7 +407,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updatePreferences failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return false;
+            return 'Failed to save preferences: ' . $e->getMessage();
         }
     }
 
@@ -710,6 +734,80 @@ final class ProfileService
         } catch (\Throwable $e) {
             return 0;
         }
+    }
+
+    private function heightToCm(string $value): int
+    {
+        if (preg_match('/^(\d+)\'(\d+)/', $value, $m)) {
+            return (int) round((int) $m[1] * 30.48 + (int) $m[2] * 2.54);
+        }
+        return 0;
+    }
+
+    private function processPhones(array $data): string|array
+    {
+        $phones = $data['phones'] ?? [];
+        if (!is_array($phones)) {
+            $phones = [$phones];
+        }
+        if (!isset($data['phones']) && !empty($data['phone'])) {
+            $phones = [$data['phone']];
+        }
+
+        $cleaned = [];
+        foreach ($phones as $phone) {
+            if (!is_string($phone) && !is_numeric($phone)) continue;
+            $phone = trim((string) $phone);
+            if ($phone === '') continue;
+            $cleaned[] = $phone;
+        }
+
+        if (count($cleaned) > self::MAX_PHONES) {
+            return 'Validation failed: phones: Maximum ' . self::MAX_PHONES . ' phone numbers allowed';
+        }
+
+        $seen = [];
+        $validated = [];
+        $errors = [];
+        foreach ($cleaned as $i => $phone) {
+            $normalized = $this->normalizePhone($phone);
+            $error = $this->phoneError($phone, $normalized);
+            if ($error !== null) {
+                $errors[] = 'Phone ' . ($i + 1) . ': ' . $error;
+                continue;
+            }
+            if (isset($seen[$normalized])) {
+                $errors[] = 'Phone ' . ($i + 1) . ': duplicate phone number';
+                continue;
+            }
+            $seen[$normalized] = true;
+            $validated[] = $normalized;
+        }
+
+        if (!empty($errors)) {
+            return 'Validation failed: ' . implode('; ', $errors);
+        }
+        return $validated;
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        return preg_replace('/[\s\-().]/', '', $phone) ?? '';
+    }
+
+    private function phoneError(string $raw, string $normalized): ?string
+    {
+        if (strlen($raw) > 20) {
+            return 'Maximum 20 characters';
+        }
+        if (!preg_match('/^\+?\d{7,15}$/', $normalized)) {
+            return 'Must be 7–15 digits, optionally prefixed with +';
+        }
+        if (strlen($normalized) === 10 && $normalized[0] !== '+'
+            && !in_array($normalized[0], ['6', '7', '8', '9'], true)) {
+            return '10-digit numbers must start with 6–9';
+        }
+        return null;
     }
 
     private function shouldSkipEmpty(string $field, mixed $value): bool
