@@ -1434,7 +1434,13 @@
                     credentials: 'include',
                     body: JSON.stringify(data)
                 })
-                .then(function (res) { return res.json(); })
+                .then(function (res) {
+                    if (res.status === 403) {
+                        showToast('Your session has expired. Please refresh the page and try again.', 'danger');
+                        throw new Error('csrf-failed');
+                    }
+                    return res.json();
+                })
                 .then(function (result) {
                     profileSubmitting = false;
                     btn.disabled = false;
@@ -1446,10 +1452,11 @@
                         showToast(result.error || 'Save failed. Please try again.', 'danger');
                     }
                 })
-                .catch(function () {
+                .catch(function (err) {
                     profileSubmitting = false;
                     btn.disabled = false;
                     btn.innerHTML = orig;
+                    if (err && err.message === 'csrf-failed') return;
                     showToast('Network error', 'danger');
                 });
             });
