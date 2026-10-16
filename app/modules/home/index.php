@@ -5,12 +5,16 @@ use Matrimony\Http\Controller;
 use Matrimony\Http\Request;
 use Matrimony\Http\Auth;
 use Matrimony\Database\Connection;
+use Matrimony\Database\Schema;
 
 final class HomeController extends Controller
 {
     public function __invoke(Request $request): void
     {
         $pdo = Connection::pdo();
+
+        // Never surface admin/super_admin accounts in the public "Recently Joined" list.
+        $roleFilter = Schema::has('users', 'role') ? "AND u.role NOT IN ('admin', 'super_admin')" : '';
 
         $stmt = $pdo->prepare("
             SELECT u.id AS user_id, u.is_verified,
@@ -19,6 +23,7 @@ final class HomeController extends Controller
             FROM users u
             JOIN profiles p ON p.user_id = u.id
             WHERE u.is_active = 1
+              {$roleFilter}
             ORDER BY u.created_at DESC
             LIMIT 6
         ");
