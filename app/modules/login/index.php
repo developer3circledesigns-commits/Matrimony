@@ -78,6 +78,7 @@ final class LoginController extends Controller
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
+            \Matrimony\Security\AuditService::log(null, 'user.login_failed', 'user', null, ['email' => $email], 'failure');
             if ($this->isAjax()) {
                 $this->json(['success' => false, 'error' => 'Invalid email or password']);
             }
@@ -92,6 +93,7 @@ final class LoginController extends Controller
         }
 
         if (!$user['is_active']) {
+            \Matrimony\Security\AuditService::log((int) $user['id'], 'user.login_blocked', 'user', (int) $user['id'], ['status' => 'inactive'], 'failure');
             if ($this->isAjax()) {
                 $this->json(['success' => false, 'error' => 'Account is deactivated. Contact support.']);
             }
@@ -106,6 +108,7 @@ final class LoginController extends Controller
         }
 
         Auth::login((int) $user['id']);
+        \Matrimony\Security\AuditService::log((int) $user['id'], 'user.login', 'user', (int) $user['id'], []);
         $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = :id")->execute([':id' => $user['id']]);
 
         if ($this->isAjax()) {

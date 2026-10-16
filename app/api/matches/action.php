@@ -25,6 +25,9 @@ try {
     require_once __DIR__ . '/../../modules/matches/controllers/ActionController.php';
     $controller = new ActionController();
     $result = $controller->perform($userId, $targetId, $status);
+    if (!empty($result['success'])) {
+        \Matrimony\Security\AuditService::log($userId, 'user.interest.' . $status, 'user', $targetId, ['mutual' => !empty($result['mutual'])]);
+    }
     echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (\Throwable $e) {
     http_response_code(500);

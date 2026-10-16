@@ -32,6 +32,7 @@ try {
     }
 
     Auth::logout();
+    \Matrimony\Security\AuditService::log($userId, 'user.deactivate', 'user', $userId, ['reason' => $reason]);
 
     echo json_encode(['success' => true, 'redirect' => '/']);
 } catch (\Throwable $e) {

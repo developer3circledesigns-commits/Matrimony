@@ -23,6 +23,9 @@ if (!$targetId) {
 require_once __DIR__ . '/../../modules/matches/controllers/ActionController.php';
 $controller = new ActionController();
 $result = $controller->report($userId, $targetId, $reason);
+if (!empty($result['success'])) {
+    \Matrimony\Security\AuditService::log($userId, 'user.report', 'user', $targetId, ['reason' => $reason]);
+}
 
 header('Content-Type: application/json');
 echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

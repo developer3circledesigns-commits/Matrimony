@@ -47,6 +47,8 @@ try {
     $pdo->prepare("UPDATE users SET is_active = 1, deactivated_at = NULL, deactivation_reason = NULL WHERE id = :id")
         ->execute([':id' => $userId]);
 
+    \Matrimony\Security\AuditService::log($userId, 'user.reactivate', 'user', $userId, []);
+
     echo json_encode(['success' => true]);
 } catch (\Throwable $e) {
     error_log('profile/reactivate error: ' . $e->getMessage());

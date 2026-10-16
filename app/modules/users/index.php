@@ -37,6 +37,10 @@ final class UsersController extends Controller
                 return;
             }
             if ($action === 'logout') {
+                $logoutId = Auth::id();
+                if ($logoutId !== null) {
+                    \Matrimony\Security\AuditService::log($logoutId, 'user.logout', 'user', $logoutId, []);
+                }
                 Auth::logout();
                 if ($this->isAjax()) {
                     $this->json(['success' => true, 'redirect' => '/home']);
@@ -103,6 +107,7 @@ final class UsersController extends Controller
         }
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
+            \Matrimony\Security\AuditService::log(null, 'user.login_failed', 'user', null, ['email' => $email], 'failure');
             if ($this->isAjax()) {
                 $this->json(['success' => false, 'error' => 'Invalid email or password']);
             }
@@ -120,6 +125,7 @@ final class UsersController extends Controller
         }
 
         Auth::login((int) $user['id']);
+        \Matrimony\Security\AuditService::log((int) $user['id'], 'user.login', 'user', (int) $user['id'], []);
 
         if (!empty($user['must_reauth_at'])) {
             $_SESSION['must_change_password'] = true;
@@ -216,6 +222,7 @@ $stmt = $pdo->prepare("INSERT INTO profiles (user_id, first_name, last_name, gen
 $stmt->execute([':uid' => $userId, ':fn' => $firstName, ':ln' => $lastName ?: $firstName, ':gender' => $gender, ':dob' => date('Y-m-d', strtotime('-18 years'))]);
 
             $pdo->commit();
+            \Matrimony\Security\AuditService::log($userId, 'user.register', 'user', $userId, ['email' => $email]);
             Auth::login($userId);
             if ($this->isAjax()) {
                 $this->json(['success' => true, 'redirect' => '/profile']);

@@ -3,6 +3,7 @@ namespace Matrimony\Services;
 
 use Matrimony\Database\Connection;
 use Matrimony\Http\Auth;
+use Matrimony\Security\AuditService;
 
 final class ProfileService
 {
@@ -478,6 +479,7 @@ private function upsertRecord(\PDO $pdo, string $table, array $data, string $use
 
         try {
             $this->upsertRecord($pdo, 'privacy_settings', $privacyData, 'user_id', $userId);
+            $this->logActivity($userId, 'profile.privacy.updated', []);
             return true;
         } catch (\Throwable $e) {
             $this->logError('updatePrivacy failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
@@ -873,6 +875,8 @@ private function upsertRecord(\PDO $pdo, string $table, array $data, string $use
             $pdo = Connection::pdo();
             $stmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, details) VALUES (:uid, :act, :det)");
             $stmt->execute([':uid' => $userId, ':act' => $action, ':det' => json_encode($details, JSON_UNESCAPED_UNICODE)]);
+            // Mirror user activity into the append-only audit trail so admins see it too.
+            AuditService::log($userId, $action, 'user', $userId, $details);
         } catch (\Throwable $e) {
             error_log('ProfileService::logActivity error: ' . $e->getMessage());
         }
