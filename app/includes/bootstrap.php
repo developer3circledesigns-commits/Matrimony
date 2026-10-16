@@ -94,7 +94,7 @@ if (session_status() === PHP_SESSION_NONE) {
     }
 
     session_set_cookie_params([
-        'lifetime' => 0,
+        'lifetime' => 604800, // 7 days — persists across browser restarts instead of being a session cookie
         'path'     => '/',
         'domain'   => '',
         'secure'   => $isSecure,
@@ -111,9 +111,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Idle-timeout + UA binding for logged-in sessions
+// Idle-timeout + session binding for logged-in sessions (generous for admins)
 if (!empty($_SESSION['user_id'])) {
-    if (!\Matrimony\Http\Auth::validateSession(3600)) {
+    if (!\Matrimony\Http\Auth::validateSession(28800)) {
         // validateSession already logged the user out when binding/idle failed
     }
 }

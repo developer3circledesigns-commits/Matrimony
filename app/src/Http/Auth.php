@@ -33,6 +33,7 @@ final class Auth
         $_SESSION['logged_in_at'] = time();
         $_SESSION['admin_reauth_at'] = time();
         $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'] ?? 'cli';
+        $_SESSION['last_activity'] = time();
         $_SESSION['ua'] = substr($_SERVER['HTTP_USER_AGENT'] ?? 'cli', 0, 255);
     }
 
@@ -54,12 +55,8 @@ final class Auth
         if (empty($_SESSION['user_id'])) {
             return false;
         }
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'cli';
-        // Strict IP pinning breaks mobile networks; only check UA prefix lightly
-        if (!empty($_SESSION['ua']) && substr($_SERVER['HTTP_USER_AGENT'] ?? 'cli', 0, 64) !== substr($_SESSION['ua'], 0, 64)) {
-            self::logout();
-            return false;
-        }
+        // Do NOT pin to a UA substring: browsers can send slightly different
+        // User-Agent strings on reload/prefetch, which caused spurious logouts.
         if (!empty($_SESSION['logged_in_at']) && (time() - (int) $_SESSION['logged_in_at']) > (7 * 24 * 3600)) {
             self::logout(); // absolute 7-day session life
             return false;
