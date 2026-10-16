@@ -1077,6 +1077,24 @@
         });
     }
 
+    /* ------------------------------------------------ password view toggle */
+
+    function initPasswordToggles() {
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-pw-toggle]');
+            if (!btn) { return; }
+            var input = btn.parentNode.querySelector('input');
+            if (!input) { return; }
+            var isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            var eye = btn.querySelector('.pw-eye');
+            var eyeOff = btn.querySelector('.pw-eye-off');
+            if (eye) { eye.classList.toggle('d-none'); }
+            if (eyeOff) { eyeOff.classList.toggle('d-none'); }
+            btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        });
+    }
+
     /* -------------------------------------------------------------- boot */
 
     onReady(function () {
@@ -1094,6 +1112,7 @@
         initCopyButtons();
         initMultiSelects();
         initFormValidation();
+        initPasswordToggles();
     });
 
     // Exposed for views that need programmatic submits.
