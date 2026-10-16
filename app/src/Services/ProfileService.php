@@ -596,7 +596,7 @@ private function upsertRecord(\PDO $pdo, string $table, array $data, string $use
             $stmt->execute([':uid' => $userId]);
             $isPrimary = (int) $stmt->fetchColumn() === 0 ? 1 : 0;
 
-            $stmt = $pdo->prepare("INSERT INTO profile_photos (user_id, path, image_data, image_mime, is_primary, status) VALUES (:uid, '', :data, :mime, :pri, 'pending')");
+            $stmt = $pdo->prepare("INSERT INTO profile_photos (user_id, path, image_data, image_mime, is_primary, status) VALUES (:uid, '', :data, :mime, :pri, 'approved')");
             $stmt->execute([
                 ':uid'  => $userId,
                 ':data' => $imageData,
