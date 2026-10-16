@@ -718,6 +718,13 @@ final class AdminUserService
 
             self::upsertProfile($pdo, $userId, $d);
             self::upsertRelated($pdo, $userId, $d);
+            // Guarantee every admin-created account is visible/opt-in by default,
+            // so its profile actually shows up in browse/matches even when the
+            // admin form did not carry privacy checkboxes.
+            $pdo->prepare("INSERT INTO privacy_settings (user_id, profile_visibility, show_phone, show_email, show_photos, show_online_status, receive_interests, allow_contact_reveal) VALUES (:u, 1, 0, 0, 1, 1, 1, 1) ON DUPLICATE KEY UPDATE user_id = user_id")
+                ->execute([':u' => $userId]);
+            $pdo->prepare("UPDATE profiles SET moderation_status = 'approved', is_hidden = 0 WHERE user_id = :u AND (moderation_status IS NULL OR moderation_status = 'pending')")
+                ->execute([':u' => $userId]);
             $pdo->commit();
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
