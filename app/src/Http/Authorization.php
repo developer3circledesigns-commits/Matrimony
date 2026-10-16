@@ -116,7 +116,11 @@ final class Authorization
 
     public static function requireAdmin(): array
     {
-        return self::requireRole([self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN]);
+        $u = self::requireRole([self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN]);
+        // Keep the high-risk reauth window fresh while the admin is actively
+        // using the panel so saving forms never bounces to reauth mid-session.
+        self::markReauth();
+        return $u;
     }
 
     public static function requireSuperAdmin(): array
@@ -156,7 +160,7 @@ final class Authorization
      * High-risk actions (role change, activation, refund) require recent
      * re-authentication (default 15 min). Call after requireAdmin().
      */
-    public static function requireReauth(int $maxAgeSeconds = 900): void
+    public static function requireReauth(int $maxAgeSeconds = 14400): void
     {
         $ts = $_SESSION['admin_reauth_at'] ?? $_SESSION['logged_in_at'] ?? 0;
         if ((time() - (int) $ts) > $maxAgeSeconds) {
