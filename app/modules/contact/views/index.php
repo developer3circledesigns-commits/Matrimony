@@ -29,23 +29,23 @@
             <!-- Contact Form -->
             <div class="col-lg-7" data-aos="fade-right">
                 <div class="card border-0 shadow-sm p-4 p-lg-5">
-                    <form>
+                    <form id="site-contact-form" method="post" action="/api/contact">
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
+                                <input type="text" class="form-control" id="name" name="name" placeholder="Enter your name" required autocomplete="name">
                             </div>
                             <div class="col-md-6">
                                 <label for="email" class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required autocomplete="email">
                             </div>
                             <div class="col-md-6">
                                 <label for="phone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="phone" placeholder="Enter your phone">
+                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="Enter your phone" autocomplete="tel">
                             </div>
                             <div class="col-md-6">
                                 <label for="subject" class="form-label">Subject</label>
-                                <select class="form-select" id="subject" required>
+                                <select class="form-select" id="subject" name="subject" required>
                                     <option value="" disabled selected>Select a topic</option>
                                     <option value="general">General Inquiry</option>
                                     <option value="support">Member Support</option>
@@ -57,7 +57,7 @@
                             </div>
                             <div class="col-12">
                                 <label for="message" class="form-label">Message</label>
-                                <textarea class="form-control" id="message" rows="6" placeholder="Write your message here..." required></textarea>
+                                <textarea class="form-control" id="message" name="message" rows="6" placeholder="Write your message here..." required></textarea>
                             </div>
                             <div class="col-12">
                                 <button type="submit" class="btn btn-accent btn-lg px-5">Quick Contact</button>

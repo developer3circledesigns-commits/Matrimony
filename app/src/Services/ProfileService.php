@@ -140,31 +140,23 @@ final class ProfileService
         return $profile;
     }
 
-    private function upsertRecord(\PDO $pdo, string $table, array $data, string $userIdKey, int $userId): void
-    {
-        $sets = [];
-        $params = [':uid' => $userId];
-        foreach ($data as $col => $val) {
-            $sets[] = "{$col} = :{$col}";
-            $params[":{$col}"] = $val;
-        }
-        if (empty($sets)) return;
-
-        $setStr = implode(', ', $sets);
-        $stmt = $pdo->prepare("SELECT 1 FROM {$table} WHERE {$userIdKey} = :ck LIMIT 1");
-        $stmt->execute([':ck' => $userId]);
-        $exists = (bool) $stmt->fetchColumn();
-
-        if ($exists) {
-            $sql = "UPDATE {$table} SET {$setStr} WHERE {$userIdKey} = :uid";
-        } else {
-            $cols = implode(', ', array_keys($data));
-            $placeholders = implode(', ', array_map(fn($s) => ":{$s}", array_keys($data)));
-            $sql = "INSERT INTO {$table} ({$userIdKey}, {$cols}) VALUES (:uid, {$placeholders})";
-        }
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
+private function upsertRecord(\PDO $pdo, string $table, array $data, string $userIdKey, int $userId): void
+{
+    $sets = [];
+    $params = [':uid' => $userId];
+    foreach ($data as $col => $val) {
+        $sets[] = "{$col} = :{$col}";
+        $params[":{$col}"] = $val;
     }
+    if (empty($sets)) return;
+
+    $cols = implode(', ', array_keys($data));
+    $placeholders = implode(', ', array_map(fn($s) => ":{$s}", array_keys($data)));
+    $update = implode(', ', array_map(fn($c) => "{$c} = VALUES({$c})", array_keys($data)));
+    $sql = "INSERT INTO {$table} ({$userIdKey}, {$cols}) VALUES (:uid, {$placeholders})
+            ON DUPLICATE KEY UPDATE {$update}";
+    $pdo->prepare($sql)->execute($params);
+}
 
     public function updatePersonal(int $userId, array $data): string|true
     {
@@ -250,7 +242,7 @@ final class ProfileService
         } catch (\Throwable $e) {
             $pdo->rollBack();
             $this->logError('updatePersonal failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return 'Failed to save profile: ' . $e->getMessage();
+            return 'Could not save your profile. Please try again.';
         }
     }
 
@@ -286,7 +278,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updateFamily failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return 'Failed to save family details: ' . $e->getMessage();
+            return 'Could not save your family details. Please try again.';
         }
     }
 
@@ -327,7 +319,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updateLifestyle failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return 'Failed to save lifestyle details: ' . $e->getMessage();
+            return 'Could not save your lifestyle details. Please try again.';
         }
     }
 
@@ -357,7 +349,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updateHoroscope failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return 'Failed to save horoscope details: ' . $e->getMessage();
+            return 'Could not save your horoscope details. Please try again.';
         }
     }
 
@@ -407,7 +399,7 @@ final class ProfileService
             return true;
         } catch (\Throwable $e) {
             $this->logError('updatePreferences failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            return 'Failed to save preferences: ' . $e->getMessage();
+            return 'Could not save your preferences. Please try again.';
         }
     }
 
@@ -482,7 +474,7 @@ final class ProfileService
                 }
             }
         }
-        if (empty($privacyData)) return false;
+        if (empty($privacyData)) return true;
 
         try {
             $this->upsertRecord($pdo, 'privacy_settings', $privacyData, 'user_id', $userId);
@@ -583,7 +575,7 @@ final class ProfileService
         $allowedExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
         if (!in_array($ext, $allowedExt)) return null;
 
-        $maxSize = 10 * 1024 * 1024;
+        $maxSize = 5 * 1024 * 1024;
         if ($file['size'] > $maxSize) return null;
 
         if (!@getimagesize($file['tmp_name'])) return null;
@@ -602,7 +594,7 @@ final class ProfileService
             $stmt->execute([':uid' => $userId]);
             $isPrimary = (int) $stmt->fetchColumn() === 0 ? 1 : 0;
 
-            $stmt = $pdo->prepare("INSERT INTO profile_photos (user_id, path, image_data, image_mime, is_primary, status) VALUES (:uid, '', :data, :mime, :pri, 'approved')");
+            $stmt = $pdo->prepare("INSERT INTO profile_photos (user_id, path, image_data, image_mime, is_primary, status) VALUES (:uid, '', :data, :mime, :pri, 'pending')");
             $stmt->execute([
                 ':uid'  => $userId,
                 ':data' => $imageData,

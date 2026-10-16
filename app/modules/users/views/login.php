@@ -16,6 +16,12 @@
 
                 <form id="login-form" method="POST" action="<?= e($formAction ?? '/users/login') ?>">
                     <?= csrf_field() ?>
+                    <?php
+                    $next = (string) ($_GET['next'] ?? '');
+                    if ($next !== '' && str_starts_with($next, '/') && !str_starts_with($next, '//')):
+                    ?>
+                    <input type="hidden" name="next" value="<?= e($next) ?>">
+                    <?php endif; ?>
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
                         <input type="email" class="form-control" id="email" name="email" value="<?= e($email ?? '') ?>" required autofocus autocomplete="email">

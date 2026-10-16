@@ -35,6 +35,7 @@ try {
 
     echo json_encode(['success' => true, 'redirect' => '/']);
 } catch (\Throwable $e) {
+    error_log('profile/deactivate error: ' . $e->getMessage());
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Could not deactivate your account. Please try again.']);
 }

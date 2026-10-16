@@ -32,22 +32,20 @@
                 <div class="modal-body modal-qr-body">
                     <p class="modal-qr-subtitle">Find your perfect life partner</p>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">First Name</label>
-                            <input type="text" class="form-control" name="first_name" placeholder="First name" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" class="form-control" name="last_name" placeholder="Last name">
-                        </div>
-                    </div>
+<div class="mb-3">
+<label class="form-label">First Name</label>
+<input type="text" class="form-control" name="first_name" placeholder="First name" required>
+</div>
+<div class="mb-3">
+<label class="form-label">Last Name</label>
+<input type="text" class="form-control" name="last_name" placeholder="Last name">
+</div>
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">I'm looking for a</label>
                         <div class="d-flex gap-2">
                             <label class="qr-gender flex-fill">
-                                <input type="radio" name="gender" value="female" checked>
+                                <input type="radio" name="gender" value="female">
                                 <span class="qr-gender-label">Female</span>
                             </label>
                             <label class="qr-gender flex-fill">
@@ -109,8 +107,8 @@ ob_start();
     var btnText = form.querySelector('.qr-btn-text');
     var btnLoading = form.querySelector('.qr-btn-loading');
 
-    var modal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: true });
-    modal.show();
+    // Modal opens only via Register CTA (data-bs-toggle) — do not auto-show on every visit.
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: 'static', keyboard: true });
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();

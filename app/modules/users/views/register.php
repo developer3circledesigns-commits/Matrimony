@@ -24,16 +24,14 @@
 
                 <form id="register-form" method="POST" action="/users/register">
                     <?= csrf_field() ?>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="first_name" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" value="<?= e($input['first_name'] ?? '') ?>" required autofocus autocomplete="given-name">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="last_name" class="form-label">Last Name</label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" value="<?= e($input['last_name'] ?? '') ?>" autocomplete="family-name">
-                        </div>
-                    </div>
+<div class="mb-3">
+<label for="first_name" class="form-label">First Name</label>
+<input type="text" class="form-control" id="first_name" name="first_name" value="<?= e($input['first_name'] ?? '') ?>" required autofocus autocomplete="given-name">
+</div>
+<div class="mb-3">
+<label for="last_name" class="form-label">Last Name</label>
+<input type="text" class="form-control" id="last_name" name="last_name" value="<?= e($input['last_name'] ?? '') ?>" autocomplete="family-name">
+</div>
                     <div class="mb-3 mt-3">
                         <label for="email" class="form-label">Email Address</label>
                         <input type="email" class="form-control" id="email" name="email" value="<?= e($input['email'] ?? '') ?>" required autocomplete="email">
@@ -41,7 +39,7 @@
                     <div class="mb-3">
                         <label for="gender" class="form-label">I am a</label>
                         <select class="form-select" id="gender" name="gender" required>
-                            <option value="">Select</option>
+                            <option value="" <?= (($input['gender'] ?? '') === '') ? 'selected' : '' ?>>Select</option>
                             <option value="male" <?= (($input['gender'] ?? '') === 'male') ? 'selected' : '' ?>>Male</option>
                             <option value="female" <?= (($input['gender'] ?? '') === 'female') ? 'selected' : '' ?>>Female</option>
                             <option value="other" <?= (($input['gender'] ?? '') === 'other') ? 'selected' : '' ?>>Other</option>

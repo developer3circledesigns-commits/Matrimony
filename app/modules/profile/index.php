@@ -54,7 +54,9 @@ final class ProfileController extends Controller
         } catch (\Throwable $e) {
                 error_log('Profile load error: ' . $e->getMessage());
                 $profile = null;
-                $errorMsg = $e->getMessage();
+                $errorMsg = filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN)
+                    ? $e->getMessage()
+                    : 'We could not load your profile right now. Please try again shortly.';
             }
         }
 

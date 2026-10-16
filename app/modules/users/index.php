@@ -57,7 +57,16 @@ final class UsersController extends Controller
     {
         Csrf::require();
 
-        $email = trim($request::input('email', ''));
+        if (!\Matrimony\Security\RateLimiter::attempt(\Matrimony\Security\RateLimiter::keyFor('login'), 10, 600)) {
+            $msg = 'Too many attempts. Try again later.';
+            if ($this->isAjax()) {
+                $this->json(['success' => false, 'error' => $msg]);
+            }
+            $this->view('users/views/login', ['pageTitle' => 'Login', 'error' => $msg, 'csrfToken' => Csrf::token(), 'email' => '', 'formAction' => '/users/login'], 'main');
+            return;
+        }
+
+        $email = strtolower(trim($request::input('email', '')));
         $password = $request::input('password', '');
 
         $errors = [];
@@ -79,9 +88,19 @@ final class UsersController extends Controller
         }
 
         $pdo = Connection::pdo();
-        $stmt = $pdo->prepare("SELECT id, password_hash, is_active FROM users WHERE email = :email LIMIT 1");
-        $stmt->execute([':email' => $email]);
-        $user = $stmt->fetch();
+        try {
+            if (\Matrimony\Database\Schema::has('users', 'role')) {
+                $stmt = $pdo->prepare("SELECT id, password_hash, is_active, account_status, role FROM users WHERE email_normalized = :email OR email = :email2 LIMIT 1");
+                $stmt->execute([':email' => $email, ':email2' => $request::input('email', '')]);
+            } else {
+                // Legacy schema fallback (migration pending)
+                $stmt = $pdo->prepare("SELECT id, password_hash, is_active FROM users WHERE email = :email LIMIT 1");
+                $stmt->execute([':email' => $request::input('email', '')]);
+            }
+            $user = $stmt->fetch();
+        } catch (\Throwable $e) {
+            $user = false;
+        }
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
             if ($this->isAjax()) {
@@ -91,7 +110,8 @@ final class UsersController extends Controller
             return;
         }
 
-        if (!$user['is_active']) {
+        if (!$user['is_active'] || in_array($user['account_status'] ?? 'active', ['suspended', 'deactivated', 'deleted'], true)) {
+            \Matrimony\Security\AuditService::log((int) $user['id'], 'user.login_blocked', 'user', $user['id'], ['status' => $user['account_status'] ?? ''], 'failure');
             if ($this->isAjax()) {
                 $this->json(['success' => false, 'error' => 'Account is deactivated. Contact support.']);
             }
@@ -101,13 +121,23 @@ final class UsersController extends Controller
 
         Auth::login((int) $user['id']);
 
+        if (!empty($user['must_reauth_at'])) {
+            $_SESSION['must_change_password'] = true;
+        }
+
         // Update last login
         $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = :id")->execute([':id' => $user['id']]);
 
-        if ($this->isAjax()) {
-            $this->json(['success' => true, 'redirect' => '/matches']);
+        $next = (string) ($request::input('next', '') ?: ($_GET['next'] ?? ''));
+        $redirect = '/matches';
+        if ($next !== '' && str_starts_with($next, '/') && !str_starts_with($next, '//') && !preg_match('#^/[\\\\]|://#', $next)) {
+            $redirect = $next;
         }
-        $this->redirect('/matches');
+
+        if ($this->isAjax()) {
+            $this->json(['success' => true, 'redirect' => $redirect]);
+        }
+        $this->redirect($redirect);
     }
 
     private function handleRegister(Request $request): void
@@ -161,14 +191,29 @@ final class UsersController extends Controller
             return;
         }
 
+        if (!\Matrimony\Security\RateLimiter::attempt(\Matrimony\Security\RateLimiter::keyFor('register'), 10, 3600)) {
+            if ($this->isAjax()) {
+                $this->json(['success' => false, 'errors' => ['Too many attempts. Try again later.']]);
+            }
+            $this->view('users/views/register', ['pageTitle' => 'Register', 'errors' => ['Too many attempts. Try again later.'], 'csrfToken' => Csrf::token(), 'input' => $_POST], 'main');
+            return;
+        }
+
+        $email = strtolower($email);
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare("INSERT INTO users (email, password_hash) VALUES (:email, :password)");
-            $stmt->execute([':email' => $email, ':password' => password_hash($password, PASSWORD_BCRYPT)]);
+            if (\Matrimony\Database\Schema::has('users', 'role')) {
+                $stmt = $pdo->prepare("INSERT INTO users (email, email_normalized, password_hash, role, account_status) VALUES (:email, :en, :password, 'user', 'active')");
+                $stmt->execute([':email' => $email, ':en' => $email, ':password' => password_hash($password, PASSWORD_DEFAULT)]);
+            } else {
+                // Legacy schema fallback (migration pending)
+                $stmt = $pdo->prepare("INSERT INTO users (email, password_hash) VALUES (:email, :password)");
+                $stmt->execute([':email' => $email, ':password' => password_hash($password, PASSWORD_DEFAULT)]);
+            }
             $userId = (int) $pdo->lastInsertId();
 
-            $stmt = $pdo->prepare("INSERT INTO profiles (user_id, first_name, last_name, gender, date_of_birth) VALUES (:uid, :fn, :ln, :gender, :dob)");
-            $stmt->execute([':uid' => $userId, ':fn' => $firstName, ':ln' => $lastName ?: $firstName, ':gender' => $gender, ':dob' => '2000-01-01']);
+$stmt = $pdo->prepare("INSERT INTO profiles (user_id, first_name, last_name, gender, date_of_birth) VALUES (:uid, :fn, :ln, :gender, :dob)");
+$stmt->execute([':uid' => $userId, ':fn' => $firstName, ':ln' => $lastName ?: $firstName, ':gender' => $gender, ':dob' => date('Y-m-d', strtotime('-18 years'))]);
 
             $pdo->commit();
             Auth::login($userId);

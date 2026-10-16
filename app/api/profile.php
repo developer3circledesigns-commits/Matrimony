@@ -13,17 +13,20 @@ $service = new ProfileService();
 if (Request::is('GET')) {
     $params = $_SERVER['API_PARAMS'] ?? [];
 
-    if (!empty($params)) {
-        $targetId = (int) $params[0];
+if (!empty($params)) {
+    $targetId = (int) $params[0];
 
-        // Browser visits to /api/profile/{id} should show the HTML page
-        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
-        if (strpos($accept, 'text/html') !== false && strpos($accept, 'application/json') === false) {
-            header('Location: /profile/' . $targetId, true, 302);
-            exit;
-        }
+    // Browser navigation falls through to the public profile page.
+    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+    if (strpos($accept, 'text/html') !== false && strpos($accept, 'application/json') === false) {
+        header('Location: /profile/' . $targetId, true, 302);
+        exit;
+    }
 
-        $profile = $service->getViewerProfile($targetId);
+    // JSON access requires a logged-in session.
+    \Matrimony\Http\Auth::require();
+
+    $profile = $service->getViewerProfile($targetId);
         if (!$profile) {
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Profile not found']);

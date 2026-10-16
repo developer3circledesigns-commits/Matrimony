@@ -41,5 +41,5 @@ try {
     }
 } catch (\Throwable $e) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode(['success' => false, 'error' => 'Could not save your details. Please try again.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }

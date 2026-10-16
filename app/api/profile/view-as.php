@@ -6,8 +6,14 @@ use Matrimony\Services\ProfileService;
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-$userId = Auth::require();
+$userId = \Matrimony\Http\Auth::require();
 $targetId = (int) ($_GET['id'] ?? 0);
+$isAdmin = class_exists('Matrimony\Http\Authorization') && \Matrimony\Http\Authorization::isAdmin();
+if ($userId !== $targetId && !$isAdmin) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    exit;
+}
 
 if (!$targetId) {
     http_response_code(400);

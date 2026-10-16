@@ -26,12 +26,16 @@ if (Request::is('POST')) {
     Csrf::require();
     if (empty($_FILES['photo'])) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'No photo uploaded', 'debug' => [
-            'files_keys' => array_keys($_FILES),
-            'post_keys' => array_keys($_POST),
-            'content_type' => $_SERVER['CONTENT_TYPE'] ?? 'none',
-            'content_length' => $_SERVER['CONTENT_LENGTH'] ?? 'none',
-        ]]);
+        $payload = ['success' => false, 'error' => 'No photo uploaded'];
+        if (filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN)) {
+            $payload['debug'] = [
+                'files_keys' => array_keys($_FILES),
+                'post_keys' => array_keys($_POST),
+                'content_type' => $_SERVER['CONTENT_TYPE'] ?? 'none',
+                'content_length' => $_SERVER['CONTENT_LENGTH'] ?? 'none',
+            ];
+        }
+        echo json_encode($payload);
         exit;
     }
     $result = $service->addPhoto($userId, $_FILES['photo']);
@@ -57,15 +61,7 @@ if (Request::is('POST')) {
         } else {
             $reason = 'Image validation failed (format, size, or content)';
         }
-        echo json_encode(['success' => false, 'error' => 'Upload failed: ' . $reason, 'debug' => [
-            'file_size_bytes' => $f['size'],
-            'file_size_mb' => round($f['size'] / 1048576, 2),
-            'error_code' => $f['error'],
-            'file_tmp' => $f['tmp_name'],
-            'file_exists_tmp' => $f['tmp_name'] ? file_exists($f['tmp_name']) : false,
-            'ini_upload_max' => ini_get('upload_max_filesize'),
-            'ini_post_max' => ini_get('post_max_size'),
-        ]]);
+        echo json_encode(['success' => false, 'error' => 'Upload failed: ' . $reason]);
         exit;
     }
     echo json_encode(['success' => true, 'data' => $result], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

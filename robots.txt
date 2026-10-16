@@ -1,4 +1,7 @@
 User-agent: *
 Disallow: /api/
+Disallow: /admin/
 Disallow: /storage/
 Allow: /
+
+Sitemap: https://bridegroom-matrimony.com/sitemap

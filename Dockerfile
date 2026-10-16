@@ -9,9 +9,18 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY . /var/www/html/
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/uploads
+# Runtime dirs (excluded from image via .dockerignore — recreate & own them)
+RUN mkdir -p \
+      /var/www/html/app/storage/sessions \
+      /var/www/html/app/storage/logs \
+      /var/www/html/app/storage/cache \
+      /var/www/html/app/storage/emails \
+      /var/www/html/app/storage/contacts \
+      /var/www/html/uploads \
+    && chown -R www-data:www-data /var/www/html/app/storage /var/www/html/uploads \
+    && chmod -R 775 /var/www/html/app/storage /var/www/html/uploads
 
-ENV APP_ENV=local
-ENV APP_DEBUG=true
+ENV APP_ENV=production
+ENV APP_DEBUG=false
 
 EXPOSE 80

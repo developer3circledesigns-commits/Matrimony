@@ -20,6 +20,32 @@ function isActiveNav($path, $currentPath) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= htmlspecialchars($pageDescription ?? 'Bride Groom Matrimony - A trusted platform helping families find meaningful alliances since 2004.') ?>">
+    <?php
+    $siteName = (string) (function_exists('env') ? env('APP_NAME', 'Matrimony') : 'Matrimony');
+    $canonicalPath = $currentPath ?? '/';
+    $canonical = function_exists('url') ? url($canonicalPath) : $canonicalPath;
+    $shareImage = function_exists('url') ? url('assets/Top_nav_logo_1.png') : '/assets/Top_nav_logo_1.png';
+    ?>
+    <link rel="canonical" href="<?= htmlspecialchars($canonical, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="<?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:title" content="<?= htmlspecialchars($pageTitle . ' | ' . $siteName, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($pageDescription ?? 'Bride Groom Matrimony - A trusted platform helping families find meaningful alliances since 2004.', ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:url" content="<?= htmlspecialchars($canonical, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:image" content="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= htmlspecialchars($pageTitle . ' | ' . $siteName, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:description" content="<?= htmlspecialchars($pageDescription ?? 'Bride Groom Matrimony - A trusted platform helping families find meaningful alliances since 2004.', ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:image" content="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8') ?>">
+    <script type="application/ld+json">
+    <?= json_encode([
+        '@context' => 'https://schema.org',
+        '@type'    => 'Organization',
+        'name'     => $siteName,
+        'url'      => function_exists('url') ? url() : $canonical,
+        'logo'     => $shareImage,
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+    </script>
     <title><?= htmlspecialchars($pageTitle) ?> | Matrimony</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +54,7 @@ function isActiveNav($path, $currentPath) {
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/app.css">
     <link rel="icon" type="image/png" href="/assets/fav_icon_img.png">
-    <?php if ($isLoggedIn && class_exists('Matrimony\Http\Csrf')): ?>
+    <?php if (class_exists('Matrimony\Http\Csrf')): ?>
         <?= csrf_meta() ?>
     <?php endif; ?>
 </head>
@@ -46,10 +72,13 @@ function isActiveNav($path, $currentPath) {
                         <a class="nav-link <?= isActiveNav('/', $currentPath) ?>" href="/">Home</a>
                         <a class="nav-link <?= isActiveNav('/about', $currentPath) ?>" href="/about">About Us</a>
                         <a class="nav-link <?= isActiveNav('/matches', $currentPath) ?>" href="/matches">Profile Matches</a>
+                        <a class="nav-link <?= isActiveNav('/plans', $currentPath) ?>" href="/plans">Plans</a>
                         <a class="nav-link <?= isActiveNav('/contact', $currentPath) ?>" href="/contact">Contact</a>
                         <div class="navbar-divider"></div>
                         <?php if ($isLoggedIn): ?>
                             <a class="nav-link <?= isActiveNav('/profile', $currentPath) ?>" href="/profile">My Profile</a>
+                            <a class="nav-link <?= isActiveNav('/membership', $currentPath) ?>" href="/membership">Membership</a>
+                            <a class="nav-link <?= isActiveNav('/notifications', $currentPath) ?>" href="/notifications">Notifications</a>
                             <a class="btn btn-outline-primary me-2" href="#" id="logout-btn" onclick="event.preventDefault(); window.handleLogout ? window.handleLogout() : (document.getElementById('logout-form').submit());">Logout</a>
                             <form id="logout-form" method="POST" action="/users/logout" style="display:none;"><?= csrf_field() ?></form>
                         <?php else: ?>

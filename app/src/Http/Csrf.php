@@ -23,7 +23,24 @@ final class Csrf
 
     public static function require(): void
     {
-        $token = $_POST['csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        // Never accept the token from the query string: it leaks via logs,
+        // Referer headers, and browser history. Body/header only.
+        $token = $_POST['csrf'] ?? '';
+
+        if ($token === '') {
+            foreach (['HTTP_X_CSRF_TOKEN', 'HTTP_X_XSRF_TOKEN'] as $key) {
+                if (!empty($_SERVER[$key])) { $token = (string) $_SERVER[$key]; break; }
+            }
+        }
+
+        if ($token === '' && function_exists('getallheaders')) {
+            foreach (getallheaders() as $name => $value) {
+                if (strcasecmp($name, 'X-CSRF-Token') === 0 || strcasecmp($name, 'X-CSRF-TOKEN') === 0 || strcasecmp($name, 'X-XSRF-TOKEN') === 0) {
+                    $token = (string) $value;
+                    break;
+                }
+            }
+        }
 
         if (empty($token) && strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
             $raw = file_get_contents('php://input');

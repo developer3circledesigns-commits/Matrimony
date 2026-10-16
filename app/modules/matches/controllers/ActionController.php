@@ -18,6 +18,15 @@ final class ActionController
             return ['success' => false, 'error' => 'Cannot act on yourself'];
         }
 
+        // Paid-membership gate for sending interests (server-enforced; §5.3).
+        // Shortlist/decline/skip remain available; only 'interested' (+mutual flow) is gated.
+        if ($status === 'interested' && class_exists('Matrimony\\Services\\InterestService')) {
+            $gate = \Matrimony\Services\InterestService::canSend($viewerId, $targetId);
+            if (!$gate['ok']) {
+                return ['success' => false, 'error' => $gate['error'] ?? 'Membership required', 'code' => $gate['code'] ?? 'denied', 'redirect' => $gate['redirect'] ?? '/plans'];
+            }
+        }
+
         $pdo = Connection::pdo();
 
         $stmt = $pdo->prepare("SELECT 1 FROM users WHERE id = :id AND is_active = 1");
@@ -85,11 +94,22 @@ final class ActionController
         if (empty($reason)) {
             return ['success' => false, 'error' => 'Reason is required'];
         }
-
+        if ($viewerId === $targetId) {
+            return ['success' => false, 'error' => 'Cannot report your own profile'];
+        }
         $pdo = Connection::pdo();
+        $exists = $pdo->prepare('SELECT 1 FROM profiles p JOIN users u ON u.id = p.user_id WHERE p.user_id = :id AND u.is_active = 1 LIMIT 1');
+        $exists->execute([':id' => $targetId]);
+        if (!$exists->fetchColumn()) {
+            return ['success' => false, 'error' => 'Profile not found'];
+        }
+        $dup = $pdo->prepare('SELECT 1 FROM profile_reports WHERE reporter_id = :r AND profile_id = :p LIMIT 1');
+        $dup->execute([':r' => $viewerId, ':p' => $targetId]);
+        if ($dup->fetchColumn()) {
+            return ['success' => false, 'error' => 'Already reported'];
+        }
         $pdo->prepare("INSERT INTO profile_reports (reporter_id, profile_id, reason) VALUES (:r, :p, :reason)")
             ->execute([':r' => $viewerId, ':p' => $targetId, ':reason' => $reason]);
-
         return ['success' => true];
     }
 

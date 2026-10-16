@@ -43,7 +43,11 @@
         iconEl.innerHTML = iconMap[options.danger ? 'danger' : options.type || 'warning'];
 
         titleEl.textContent = options.title || 'Confirm';
-        bodyEl.innerHTML = options.message || 'Are you sure?';
+        if (options.allowHtml) {
+            bodyEl.innerHTML = options.message || 'Are you sure?';
+        } else {
+            bodyEl.textContent = options.message || 'Are you sure?';
+        }
         confirmBtn.textContent = options.confirmText || 'Confirm';
         confirmBtn.className = 'btn ' + (options.confirmClass || 'btn-danger');
         if (options.cancelText) cancelBtn.textContent = options.cancelText;
@@ -78,7 +82,7 @@
         el.addEventListener('hidden.bs.modal', cleanup);
     }
 
-    function showAlert(type, title, message, callback) {
+    function showAlert(type, title, message, callback, allowHtml) {
         var el = document.getElementById('alertModal');
         if (!el) return;
         var titleEl = document.getElementById('alertModalLabel');
@@ -96,7 +100,11 @@
         };
         iconEl.innerHTML = headerIconMap[type] || headerIconMap.info;
         titleEl.textContent = title || 'Notification';
-        bodyEl.innerHTML = message || '';
+        if (allowHtml) {
+            bodyEl.innerHTML = message || '';
+        } else {
+            bodyEl.textContent = message || '';
+        }
         if (type === 'error' || type === 'danger') {
             closeBtn.className = 'btn btn-danger';
         } else if (type === 'warning') {
@@ -154,6 +162,7 @@
     window.showToast = showToast;
     window.showConfirm = function(opts, cb) { showConfirm(opts, cb); };
     window.showAlert = function(type, title, msg, cb) { showAlert(type, title, msg, cb); };
+    window.showHtmlAlert = function(type, title, html, cb) { showAlert(type, title, html, cb, true); };
     window.showInfoAlert = function(title, msg) { showAlert('info', title || 'Information', msg); };
     window.showSuccessAlert = function(title, msg) { showAlert('success', title || 'Success', msg); };
     window.showWarningAlert = function(title, msg) { showAlert('warning', title || 'Warning', msg); };
@@ -172,7 +181,7 @@
         }, function (confirmed) {
             if (!confirmed) return;
             showLoading();
-            var csrf = document.querySelector('[data-csrf]')?.getAttribute('data-csrf') || '';
+            var csrf = document.querySelector('[data-csrf]')?.getAttribute('data-csrf') || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             fetch('/api/profile/deactivate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -197,7 +206,7 @@
         var password = document.getElementById('reactivate-password')?.value || '';
         if (!password) { showWarningAlert('Required', 'Please enter your password.'); return; }
         showLoading();
-        var csrf = document.querySelector('[data-csrf]')?.getAttribute('data-csrf') || '';
+        var csrf = document.querySelector('[data-csrf]')?.getAttribute('data-csrf') || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         fetch('/api/profile/reactivate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -975,7 +984,7 @@
                     '<span class="match-percentage-label">Match</span>' +
                 '</div>' +
                 '<div class="match-photo">' +
-                    '<img src="' + photo + '" alt="Photo of ' + escapeHtml(profile.first_name || '') + '" loading="lazy" data-testid="match-photo" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
+                    '<img src="' + escapeAttr(photo) + '" alt="Photo of ' + escapeAttr(profile.first_name || '') + '" loading="lazy" data-testid="match-photo" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
                     '<div class="match-overlay">' +
                         '<div class="match-name">' + escapeHtml(profile.first_name || '') + '</div>' +
                         '<div class="match-badges">' +
@@ -1023,7 +1032,7 @@
 
         fetch('/api/matches/action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
             credentials: 'include',
             body: JSON.stringify({ target_id: targetId, status: status, csrf: csrf })
         })
@@ -1086,7 +1095,7 @@
             '<div class="row">' +
                 '<div class="col-md-5">' +
                     '<div class="profile-modal-photo-wrap">' +
-                        '<img src="' + photo + '" class="profile-modal-photo" alt="Photo of ' + fullName + '" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
+                        '<img src="' + escapeAttr(photo) + '" class="profile-modal-photo" alt="Photo of ' + escapeAttr((profile.first_name || '') + ' ' + (profile.last_name || '')) + '" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
                     '</div>' +
                 '</div>' +
                 '<div class="col-md-7">' +
@@ -1213,6 +1222,16 @@
         var div = document.createElement('div');
         div.appendChild(document.createTextNode(str));
         return div.innerHTML;
+    }
+
+    // Safe for HTML attribute contexts (quotes are not escaped by escapeHtml).
+    function escapeAttr(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     function applyQuickPreset(preset, activate) {
@@ -1618,6 +1637,7 @@
         fetch('/api/profile/photo', {
             method: 'POST',
             credentials: 'include',
+            headers: { 'X-CSRF-TOKEN': csrf },
             body: formData
         })
         .then(function (res) {
@@ -1772,7 +1792,7 @@
                     '<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">' +
                     '<div class="modal-content" style="border-radius:14px;overflow:hidden;border:none">' +
                     '<div style="background:linear-gradient(135deg,#2d1656,#9565be);color:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px">' +
-                    '<img src="' + photo + '" alt="" class="profile-thumb-sm" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
+                    '<img src="' + escapeAttr(photo) + '" alt="" class="profile-thumb-sm" onerror="this.src=\'' + placeholderSVG(initials) + '\'">' +
                     '<div style="flex:1"><h5 style="margin:0;font-size:16px;font-weight:600">' + fullName + '</h5>' +
                     '<p style="margin:2px 0 0;font-size:12px;opacity:.85">' + (p.age || '') + ' yrs &middot; ' + escapeHtml(p.religion || '') + ' &middot; ' + escapeHtml(p.city || '') + '</p></div>' +
                     '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="font-size:14px"></button></div>' +
@@ -1794,7 +1814,7 @@
             navigator.clipboard.writeText(url).then(function () {
                 showToast('Profile link copied to clipboard!', 'success');
             }).catch(function () {
-                showInfoAlert('Share Profile', '<div class="text-center"><p class="mb-2">Copy this link to share your profile:</p><input type="text" class="form-control text-center" value="' + escapeHtml(url) + '" readonly onclick="this.select()" style="cursor:text;background:#f8f9fa" /></div>');
+                showHtmlAlert('info', 'Share Profile', '<div class="text-center"><p class="mb-2">Copy this link to share your profile:</p><input type="text" class="form-control text-center" value="' + escapeHtml(url) + '" readonly onclick="this.select()" style="cursor:text;background:#f8f9fa" /></div>');
             });
         } else {
             showInfoAlert('Share Profile', '<div class="text-center"><p class="mb-2">Copy this link to share your profile:</p><input type="text" class="form-control text-center" value="' + escapeHtml(url) + '" readonly onclick="this.select()" style="cursor:text;background:#f8f9fa" /></div>');
@@ -1958,11 +1978,12 @@
                 message: document.getElementById('message')?.value || ''
             };
 
+            var csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             fetch('/api/contact', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
                 credentials: 'include',
-                body: JSON.stringify(data)
+                body: JSON.stringify(Object.assign({}, data, { csrf: csrf }))
             })
             .then(function (r) { return r.json(); })
             .then(function (result) {

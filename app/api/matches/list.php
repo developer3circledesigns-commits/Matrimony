@@ -32,5 +32,5 @@ try {
 } catch (\Throwable $e) {
     error_log('Matches list error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Could not load matches. Please try again.']);
 }

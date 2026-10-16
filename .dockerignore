@@ -1,0 +1,37 @@
+# Version control / local only
+.git
+.gitignore
+.dockerignore
+docker-compose.yml
+
+# Secrets & environment
+.env
+.env.*
+*.pem
+*.key
+
+# Runtime data (must not be baked into the image)
+storage/
+app/storage/
+uploads/
+app/storage/sessions/
+
+# Logs / archives / dumps
+*.log
+*.sql.gz
+*.bak
+*.old
+*.zip
+*.tar
+*.tar.gz
+
+# Tooling / tests
+TEST/
+tests/
+node_modules/
+vendor/
+.vscode/
+.idea/
+
+# Docs
+*.md

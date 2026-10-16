@@ -15,15 +15,25 @@ header('X-Accel-Buffering: no');
 
 // Prevent timeout
 if (function_exists('set_time_limit')) {
-    set_time_limit(0);
+    set_time_limit(330);
 }
 
 require_once __DIR__ . '/../../modules/matches/controllers/ActionController.php';
 $controller = new ActionController();
 
+$startedAt = time();
+$maxLifetime = 300; // Cap the stream so a worker is never held indefinitely.
 $lastCheck = time();
 
 while (true) {
+    if (time() - $startedAt >= $maxLifetime) {
+        // Ask the client to reconnect; frees the PHP worker for other requests.
+        echo "event: reconnect\ndata: {}\n\n";
+        ob_flush();
+        flush();
+        break;
+    }
+
     $notifications = $controller->getNotifications($userId);
 
     foreach ($notifications as $notif) {

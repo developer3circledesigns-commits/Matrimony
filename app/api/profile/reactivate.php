@@ -49,6 +49,7 @@ try {
 
     echo json_encode(['success' => true]);
 } catch (\Throwable $e) {
+    error_log('profile/reactivate error: ' . $e->getMessage());
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Could not reactivate your account. Please try again.']);
 }

@@ -143,15 +143,19 @@
 <script src="/js/app.js?v=<?= filemtime(__DIR__ . '/../js/app.js') ?>"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script>
-    AOS.init({ duration: 1000, easing: 'ease-out-cubic', once: true, offset: 60 });
-    const navbar = document.querySelector('.navbar');
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 20) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
+    // Safety net: never leave the page hidden if app.js fails to load/parse.
+    window.addEventListener('load', function () { document.body.classList.remove('skeleton-active'); });
+    if (window.AOS) { AOS.init({ duration: 1000, easing: 'ease-out-cubic', once: true, offset: 60 }); }
+    var navbar = document.querySelector('.navbar');
+    if (navbar) {
+        window.addEventListener('scroll', function () {
+            if (window.scrollY > 20) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    }
 </script>
 <?php if (!empty($pageScripts ?? '')) echo $pageScripts; ?>
 </body>
