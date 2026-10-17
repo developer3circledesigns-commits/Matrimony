@@ -401,7 +401,7 @@ $checkField = static function (string $key, string $label, array $opts = []) use
                     . '<label class="form-label" for="f_kattam">Kattam (horoscope chart)</label>'
                     . '<input class="form-control' . admin_invalid($ctx['errors'], 'kattam') . '" type="file"'
                     . ' id="f_kattam" name="kattam" accept="image/jpeg,image/png,image/webp,image/gif">'
-                    . '<div class="form-text">Optional JPG, PNG, WebP or GIF up to 5 MB.'
+                    . '<div class="form-text">Optional JPG, PNG, WebP or GIF up to 5 MB. Recommended size: 800 × 800 px (square).'
                     . ($isEdit && $hasKattam ? ' Uploading replaces the current chart.' : '') . '</div>'
                     . admin_field_error($ctx['errors'], 'kattam')
                     . ($hasKattam
@@ -543,7 +543,7 @@ $checkField = static function (string $key, string $label, array $opts = []) use
                     . '<input class="form-control' . admin_invalid($ctx['errors'], 'photo') . '"'
                     . ' type="file" id="f_photo" name="photo"'
                     . ' accept="image/jpeg,image/png,image/webp,image/gif">'
-                    . '<div class="form-text">JPG, PNG, WebP or GIF up to 5 MB.</div>'
+                    . '<div class="form-text">JPG, PNG, WebP or GIF up to 5 MB. Recommended size: 800 × 1000 px (4:5 portrait).</div>'
                     . admin_field_error($ctx['errors'], 'photo')
                     . '</div>'
                     . ($primaryPhoto !== ''

@@ -235,6 +235,7 @@ $gender = $p['gender'] ?? '';
                             <input type="file" accept="image/*" class="d-none" id="photo-upload-input">
                         </label>
                     </div>
+                    <small class="text-muted d-block mt-2" data-testid="photo-size-hint">Recommended size: 800 × 1000 px (4:5 portrait), max 5 MB</small>
                 </div>
                 <div class="col-md">
                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -750,6 +751,7 @@ $gender = $p['gender'] ?? '';
                             <div class="col-12">
                                 <label class="form-label">Kattam</label>
                                 <input type="file" class="form-control" name="kattam" accept="image/*">
+                                <div class="form-text">Recommended size: 800 × 800 px (square), max 5 MB. JPG, PNG, WebP or GIF.</div>
                             </div>
                         </div>
                     </div>
@@ -856,6 +858,7 @@ $gender = $p['gender'] ?? '';
                     </label>
                 </div>
                 <div class="card-body">
+                    <p class="text-muted mb-3" data-testid="gallery-size-hint">Recommended size: 800 × 600 px (4:3 landscape), max 5 MB. JPG, PNG, WebP or GIF.</p>
                     <div class="row g-3" id="photo-gallery">
                         <?php if (empty($photos)): ?>
                             <div class="col-12 text-center py-5 text-muted">
