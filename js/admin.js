@@ -1107,21 +1107,26 @@
     /* -------------------------------------------------------------- boot */
 
     onReady(function () {
+        // Critical - run immediately
         initTheme();
         initSidebar();
         initSearchShortcut();
         initUserMenu();
         initConfirmations();
         initSubmitGuard();
-        initFilters();
-        initFlashAutohide();
-        initTableLinks();
-        initTableOverflowHints();
-        initPlanEditors();
-        initCopyButtons();
-        initMultiSelects();
-        initFormValidation();
-        initPasswordToggles();
+
+        // Defer non-critical initializations
+        setTimeout(function() {
+            initFilters();
+            initFlashAutohide();
+            initTableLinks();
+            initTableOverflowHints();
+            initPlanEditors();
+            initCopyButtons();
+            initMultiSelects();
+            initFormValidation();
+            initPasswordToggles();
+        }, 50);
     });
 
     // Exposed for views that need programmatic submits.

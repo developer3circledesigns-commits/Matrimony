@@ -5598,12 +5598,31 @@ html {
     border-radius: 6px;
 }
 
-/* Respect reduced motion */
+/* Respect reduced motion - disable all animations for better performance */
 @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
     .match-card,
     .match-card:hover,
     .match-card:hover .match-photo img { transition: none; transform: none; }
     .skeleton-pulse { animation: none; }
+    .hero-anim-1,
+    .hero-anim-2,
+    .hero-anim-3 { animation: none; opacity: 1; }
+    .how-card:hover { transform: none; }
+    .how-card:hover .how-icon-wrap { transform: none; }
+    .hover-shadow:hover { transform: none; }
+    .card:hover { transform: none; }
+    .social-link:hover { transform: none; }
+    .plan-card:hover { transform: none; }
+    .match-card:hover { transform: none; }
+    .match-card:hover .match-photo img { transform: none; }
 }
 
 /* Skeletons inside responsive grid */

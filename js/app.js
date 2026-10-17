@@ -467,14 +467,17 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
-            setTimeout(function () {
-                if (el.parentNode) el.parentNode.removeChild(el);
-            }, parseInt(el.dataset.autoDismiss, 10) || 5000);
-        });
-        document.querySelectorAll('[data-counter]').forEach(function (el) {
-            animateCounter(el);
-        });
+        // Use setTimeout to defer non-critical initialization
+        setTimeout(function() {
+            document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+                setTimeout(function () {
+                    if (el.parentNode) el.parentNode.removeChild(el);
+                }, parseInt(el.dataset.autoDismiss, 10) || 5000);
+            });
+            document.querySelectorAll('[data-counter]').forEach(function (el) {
+                animateCounter(el);
+            });
+        }, 100);
     });
 
     function getNavbarHeight() {
@@ -835,7 +838,16 @@
 
         document.body.classList.add('matches-locked');
 
-        loadMatches(1, true);
+        // Use requestIdleCallback for non-critical initial load if available
+        if (window.requestIdleCallback) {
+            requestIdleCallback(function() {
+                loadMatches(1, true);
+            }, { timeout: 2000 });
+        } else {
+            setTimeout(function() {
+                loadMatches(1, true);
+            }, 50);
+        }
 
         var filterForm = document.getElementById('filter-form');
         if (filterForm) {
@@ -851,14 +863,14 @@
                 syncFilterFromDOM();
                 updateFilterUI();
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(function () { matchesState.page = 1; loadMatches(1, true); }, 300);
+                debounceTimer = setTimeout(function () { matchesState.page = 1; loadMatches(1, true); }, 500);
             });
             filterForm.addEventListener('input', function (e) {
                 if (e.target && e.target.name === 'search') return;
                 syncFilterFromDOM();
                 updateFilterUI();
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(function () { matchesState.page = 1; loadMatches(1, true); }, 300);
+                debounceTimer = setTimeout(function () { matchesState.page = 1; loadMatches(1, true); }, 500);
             });
         }
 
@@ -2502,12 +2514,44 @@
         }
     });
 
+    // Lazy initialization - only init when page is actually visible
+    var initialized = { matches: false, profile: false, photos: false, auth: false, contact: false, password: false };
+
+    function lazyInit() {
+        if (!initialized.matches && document.getElementById('matches-grid')) {
+            initMatchesPage();
+            initialized.matches = true;
+        }
+        if (!initialized.profile && document.querySelector('.profile-page')) {
+            initProfilePage();
+            initialized.profile = true;
+        }
+        if (!initialized.photos && document.querySelector('.photo-upgrade-section')) {
+            upgradePhotoHandlers();
+            initialized.photos = true;
+        }
+        if (!initialized.auth && (document.getElementById('login-form') || document.getElementById('register-form'))) {
+            initAuthForms();
+            initialized.auth = true;
+        }
+        if (!initialized.contact && document.getElementById('contact-form')) {
+            initContactForm();
+            initialized.contact = true;
+        }
+        if (!initialized.password && document.querySelector('.password-toggle')) {
+            initPasswordToggles();
+            initialized.password = true;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        initMatchesPage();
-        initProfilePage();
-        upgradePhotoHandlers();
-        initAuthForms();
-        initContactForm();
-        initPasswordToggles();
+        lazyInit();
+    });
+
+    // Re-check on page visibility changes
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) {
+            lazyInit();
+        }
     });
 })();
