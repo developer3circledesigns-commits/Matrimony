@@ -11,7 +11,7 @@ unset($filters['csrf'], $filters['_']);
 
 require_once __DIR__ . '/../../modules/matches/controllers/MatchController.php';
 $controller = new MatchController();
-$result = $controller->list($filters, 'compatibility', 1, 1, $userId);
+$result = $controller->list($filters, 'compatibility', 1, 1, $userId, true);
 
 header('Content-Type: application/json');
 echo json_encode([

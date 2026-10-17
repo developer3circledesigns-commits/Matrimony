@@ -262,6 +262,7 @@
     function onSearchChange() {
         clearTimeout(searchDebounce);
         filterState.search = document.querySelector('[name="search"]')?.value || '';
+        updateFilterUI();
         searchDebounce = setTimeout(function() {
             matchesState.page = 1;
             loadMatches(1, true);
@@ -635,6 +636,32 @@
         if (bar) {
             var clone = bar.cloneNode(true);
             clone.classList.remove('filter-bar');
+            clone.removeAttribute('id');
+            var cloneHead = clone.querySelector('.sidebar-head');
+            if (cloneHead) cloneHead.remove();
+            var cloneActions = clone.querySelector('.sidebar-actions');
+            if (cloneActions) cloneActions.remove();
+            // Suffix every cloned ID so the drawer never duplicates the
+            // original sidebar's IDs in the document. References that point at
+            // a suffixed ID (for / list / aria-*) are remapped in lockstep so
+            // the clone stays internally consistent.
+            var idSuf = '-mdrawer';
+            var idMap = {};
+            clone.querySelectorAll('[id]').forEach(function(n) {
+                idMap[n.id] = true;
+                n.id = n.id + idSuf;
+            });
+            var refAttrs = ['for', 'list', 'aria-controls', 'aria-labelledby', 'aria-describedby'];
+            clone.querySelectorAll(refAttrs.map(function(a) { return '[' + a + ']'; }).join(',')).forEach(function(n) {
+                refAttrs.forEach(function(a) {
+                    var v = n.getAttribute(a);
+                    if (!v) return;
+                    var next = v.split(/\s+/).map(function(t) {
+                        return idMap[t] ? t + idSuf : t;
+                    }).join(' ');
+                    n.setAttribute(a, next);
+                });
+            });
             clone.querySelectorAll('.filter-trigger').forEach(function(t) {
                 var p = t.querySelector('.filter-panel');
                 if (p) {
@@ -646,7 +673,7 @@
                         e.preventDefault();
                         e.stopPropagation();
                         var pid = btn.getAttribute('data-panel');
-                        var panel = clone.querySelector('#' + pid);
+                        var panel = clone.querySelector('#' + pid + idSuf);
                         if (panel) {
                             var isOpen = panel.classList.contains('open');
                             clone.querySelectorAll('.filter-panel').forEach(function(p) {
@@ -670,8 +697,13 @@
             content.appendChild(clone);
 
             content.querySelectorAll('select, input').forEach(function(el) {
-                el.onchange = function() { syncFilterFromDOM(); };
-                el.oninput = function() { syncFilterFromDOM(); };
+                var handler = function() {
+                    mirrorControlToOriginal(el);
+                    syncFilterFromDOM();
+                    updateFilterUI();
+                };
+                el.onchange = handler;
+                el.oninput = handler;
             });
 
             // Mobile: open first accordion panel by default
@@ -688,7 +720,39 @@
         overlay.classList.add('active');
         drawer.classList.add('open');
         document.body.style.overflow = 'hidden';
+
+        lastFocusedBeforeDrawer = document.activeElement;
+        var focusables = getFocusable(drawer);
+        if (focusables.length) {
+            try { focusables[0].focus(); } catch (e) {}
+        }
+        document.addEventListener('keydown', trapDrawerFocus);
     };
+
+    var lastFocusedBeforeDrawer = null;
+
+    function getFocusable(root) {
+        if (!root) return [];
+        return Array.prototype.slice.call(root.querySelectorAll(
+            'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter(function (el) { return el.offsetParent !== null || el === document.activeElement; });
+    }
+
+    function trapDrawerFocus(e) {
+        var drawer = document.getElementById('mobileDrawer');
+        if (!drawer || !drawer.classList.contains('open') || e.key !== 'Tab') return;
+        var focusables = getFocusable(drawer);
+        if (!focusables.length) return;
+        var first = focusables[0];
+        var last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    }
 
     window.closeMobileDrawer = function() {
         var overlay = document.getElementById('filterOverlay');
@@ -696,7 +760,28 @@
         if (overlay) overlay.classList.remove('active');
         if (drawer) drawer.classList.remove('open');
         document.body.style.overflow = '';
+        document.removeEventListener('keydown', trapDrawerFocus);
+        if (lastFocusedBeforeDrawer && lastFocusedBeforeDrawer.focus) {
+            try { lastFocusedBeforeDrawer.focus(); } catch (e) {}
+        }
     };
+
+    function mirrorControlToOriginal(el) {
+        if (!el) return;
+        var name = el.getAttribute('name');
+        if (!name) return;
+        var form = document.getElementById('filter-form');
+        if (!form) return;
+        var selector = '[name="' + String(name).replace(/"/g, '\\"') + '"]';
+        if (el.type === 'checkbox' || el.type === 'radio') {
+            form.querySelectorAll(selector).forEach(function (orig) {
+                if (orig.value === el.value) orig.checked = el.checked;
+            });
+            return;
+        }
+        var orig = form.querySelector(selector);
+        if (orig) orig.value = el.value;
+    }
 
     function syncFilterFromDOM() {
         filterState.search = document.querySelector('[name="search"]')?.value || '';
@@ -748,6 +833,8 @@
         var container = document.querySelector('.matches-page');
         if (!container) return;
 
+        document.body.classList.add('matches-locked');
+
         loadMatches(1, true);
 
         var filterForm = document.getElementById('filter-form');
@@ -761,12 +848,17 @@
 
             var debounceTimer;
             filterForm.addEventListener('change', function () {
+                syncFilterFromDOM();
+                updateFilterUI();
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(fetchCount, 300);
+                debounceTimer = setTimeout(function () { matchesState.page = 1; loadMatches(1, true); }, 300);
             });
-            filterForm.addEventListener('input', function () {
+            filterForm.addEventListener('input', function (e) {
+                if (e.target && e.target.name === 'search') return;
+                syncFilterFromDOM();
+                updateFilterUI();
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(fetchCount, 300);
+                debounceTimer = setTimeout(function () { matchesState.page = 1; loadMatches(1, true); }, 300);
             });
         }
 
@@ -839,6 +931,106 @@
 
         initStickyDetection();
         updateFilterUI();
+        initFacets();
+        try { localStorage.removeItem('matchesView'); } catch (e) {}
+        var lv = document.getElementById('matches-grid');
+        if (lv) lv.classList.remove('is-list-view');
+    }
+
+    function initFacets() {
+        fetch('/api/matches/facets', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'include'
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (res) {
+            var facets = res && res.success && res.data ? res.data : null;
+            if (!facets) return;
+            populateSelect('caste-select', facets.caste);
+            populateSelect('tongue-select', facets.mother_tongue);
+            populateSelect('education-select', facets.education);
+            populateSelect('occupation-select', facets.occupation);
+            populateDietOptions(facets.diet);
+            populateDatalist('city-options', facets.city);
+            applyReligionCounts(facets.religion);
+        })
+        .catch(function () {});
+    }
+
+    function populateSelect(id, map) {
+        var sel = document.getElementById(id);
+        if (!sel || !map) return;
+        var keys = Object.keys(map);
+        var first = sel.querySelector('option') ? sel.querySelector('option').cloneNode(true) : null;
+        var current = sel.value;
+        sel.innerHTML = '';
+        if (first) {
+            first.value = '';
+            sel.appendChild(first);
+        }
+        keys.forEach(function (v) {
+            var o = document.createElement('option');
+            o.value = v;
+            o.textContent = v + ' (' + map[v] + ')';
+            sel.appendChild(o);
+        });
+        if (current && map[current] !== undefined) sel.value = current;
+    }
+
+    /**
+     * Diet options must always be listed, even before any profile records a diet
+     * (the canonical list is what the select is seeded with in the view).
+     * When diet data does exist we annotate the options with live counts.
+     */
+    function populateDietOptions(map) {
+        var sel = document.getElementById('diet-select');
+        if (!sel) return;
+        if (!map || !Object.keys(map).length) return;
+
+        var canonical = ['Vegetarian', 'Non-veg', 'Vegan', 'Jain', 'Halal'];
+        var current = sel.value;
+        sel.innerHTML = '';
+
+        var any = document.createElement('option');
+        any.value = '';
+        any.textContent = 'Any';
+        sel.appendChild(any);
+
+        canonical.forEach(function (v) {
+            var o = document.createElement('option');
+            o.value = v;
+            o.textContent = map[v] !== undefined ? v + ' (' + map[v] + ')' : v;
+            sel.appendChild(o);
+        });
+
+        // Keep any option that exists in the data but is not in the canonical list.
+        Object.keys(map).forEach(function (v) {
+            if (canonical.indexOf(v) !== -1) return;
+            var o = document.createElement('option');
+            o.value = v;
+            o.textContent = v + ' (' + map[v] + ')';
+            sel.appendChild(o);
+        });
+
+        if (current) sel.value = current;
+    }
+
+    function populateDatalist(id, map) {
+        var dl = document.getElementById(id);
+        if (!dl || !map) return;
+        var keys = Object.keys(map);
+        if (!keys.length) return;
+        dl.innerHTML = keys.map(function (v) {
+            return '<option value="' + escapeAttr(v) + '"></option>';
+        }).join('');
+    }
+
+    function applyReligionCounts(map) {
+        if (!map) return;
+        document.querySelectorAll('.panel-count[data-facet="religion"]').forEach(function (el) {
+            var v = el.getAttribute('data-value');
+            if (map[v] !== undefined) el.textContent = '(' + map[v] + ')';
+        });
     }
 
     function getFilters() {
@@ -868,12 +1060,18 @@
         return data;
     }
 
-    function loadMatches(page, replace) {
-        if (matchesState.loading) return;
-        matchesState.loading = true;
+    var matchesAbort = null;
 
+    function loadMatches(page, replace) {
         var grid = document.getElementById('matches-grid');
         if (!grid) return;
+
+        if (matchesAbort) { try { matchesAbort.abort(); } catch (e) {} }
+        matchesAbort = new AbortController();
+        var signal = matchesAbort.signal;
+
+        matchesState.loading = true;
+        grid.setAttribute('aria-busy', 'true');
 
         if (replace) {
             grid.querySelectorAll('[data-testid="match-card"], .matches-empty-state').forEach(function(el) { el.remove(); });
@@ -891,7 +1089,8 @@
 
         fetch('/api/matches/list?' + params.toString(), {
             headers: { 'Accept': 'application/json' },
-            credentials: 'include'
+            credentials: 'include',
+            signal: signal
         })
         .then(function (res) {
             if (!res.ok) {
@@ -901,8 +1100,9 @@
         })
         .then(function (result) {
             matchesState.loading = false;
+            grid.setAttribute('aria-busy', 'false');
             if (!result.success) {
-                grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted fs-5">Something went wrong. Please try again.</p><button class="btn btn-primary btn-sm mt-2" onclick="window.loadMatches(1, true)">Retry</button></div>';
+                grid.innerHTML = '<div class="match-cell match-cell--full text-center py-5"><p class="text-muted fs-5">Something went wrong. Please try again.</p><button class="btn btn-primary btn-sm mt-2" onclick="window.loadMatches(1, true)">Retry</button></div>';
                 return;
             }
 
@@ -919,7 +1119,7 @@
             }
 
             if (result.data.length === 0) {
-                grid.innerHTML = '<div class="col-12 matches-empty-state" data-testid="empty-state">' +
+                grid.innerHTML = '<div class="match-cell--full matches-empty-state" data-testid="empty-state">' +
                     '<svg width="48" height="48" viewBox="0 0 24 24" fill="var(--brand-gray-300)" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>' +
                     '<h3>No matches found</h3>' +
                     '<p>Try adjusting your filters or removing some criteria to see more results.</p>' +
@@ -934,9 +1134,11 @@
 
             updatePagination(result.meta);
         })
-        .catch(function () {
+        .catch(function (err) {
+            if (err && err.name === 'AbortError') return;
             matchesState.loading = false;
-            grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted fs-5">Network error. Please check your connection and try again.</p><button class="btn btn-primary btn-sm mt-2" onclick="window.loadMatches(1, true)">Retry</button></div>';
+            grid.setAttribute('aria-busy', 'false');
+            grid.innerHTML = '<div class="match-cell--full text-center py-5"><p class="text-muted fs-5">Network error. Please check your connection and try again.</p><button class="btn btn-primary btn-sm mt-2" onclick="window.loadMatches(1, true)">Retry</button></div>';
         });
     }
 
@@ -955,7 +1157,8 @@
 
     function createMatchCard(profile) {
         var col = document.createElement('div');
-        col.className = 'col-md-6 col-lg-3';
+        col.className = 'match-cell';
+        col.setAttribute('role', 'listitem');
 
         var initials = (profile.first_name || '?').charAt(0).toUpperCase();
         var ageStr = profile.age ? profile.age + ' yrs' : '';
@@ -968,12 +1171,13 @@
         }
         var verifiedClass = profile.verified ? ' verified' : '';
         var photo = profile.primary_photo || placeholderSVG(initials);
+        var shortlisted = !!profile.shortlisted;
 
         var premiumBadge = profile.premium || profile.membership === 'premium' ? '<div class="premium-badge" data-testid="premium-badge" aria-label="Premium profile"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>' : '';
 
         col.innerHTML =
             '<div class="match-card' + verifiedClass + '" data-testid="match-card">' +
-                '<button class="bookmark-btn" data-action="shortlist" data-id="' + profile.user_id + '" aria-label="Shortlist ' + escapeHtml(profile.first_name || 'this profile') + '" aria-pressed="false">' +
+                '<button class="bookmark-btn' + (shortlisted ? ' active' : '') + '" data-action="shortlist" data-id="' + profile.user_id + '" aria-label="Shortlist ' + escapeHtml(profile.first_name || 'this profile') + '" aria-pressed="' + (shortlisted ? 'true' : 'false') + '">' +
                     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
                         '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>' +
                     '</svg>' +
@@ -1050,6 +1254,10 @@
                     showToast('Profile shortlisted!', 'info');
                 }
             } else {
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                    return;
+                }
                 showToast(result.error || 'Action failed', 'danger');
             }
         })

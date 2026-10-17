@@ -27,7 +27,7 @@ final class MatchController
         $this->engine = new MatchEngine();
     }
 
-    public function list(array $filters, string $sort, int $page, int $perPage, int $viewerId): array
+    public function list(array $filters, string $sort, int $page, int $perPage, int $viewerId, bool $withFacets = false): array
     {
         $pdo = Connection::pdo();
         $viewer = $this->getViewerProfile($viewerId);
@@ -93,7 +93,7 @@ final class MatchController
         }
 
         $took = (int) ((microtime(true) - $start) * 1000);
-        $facets = $this->computeFacets($filters, $viewerId, $viewer['gender']);
+        $facets = $withFacets ? $this->computeFacets($filters, $viewerId, $viewer['gender']) : [];
 
         return [
             'data' => $data,
@@ -270,6 +270,27 @@ final class MatchController
             $cities[$row['city']] = (int) $row['cnt'];
         }
         $facets['city'] = $cities;
+
+        foreach (['caste', 'education', 'occupation', 'mother_tongue'] as $facetColumn) {
+            $sql = "SELECT p.{$facetColumn} AS val, COUNT(*) AS cnt FROM profiles p JOIN users u ON u.id = p.user_id {$joins} WHERE {$where} AND p.{$facetColumn} IS NOT NULL AND p.{$facetColumn} <> '' GROUP BY p.{$facetColumn} ORDER BY cnt DESC LIMIT 25";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $values = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $values[(string) $row['val']] = (int) $row['cnt'];
+            }
+            $facets[$facetColumn] = $values;
+        }
+
+        // Diet lives in profile_assets, so it needs its own join.
+        $sql = "SELECT pa.diet AS val, COUNT(*) AS cnt FROM profiles p JOIN users u ON u.id = p.user_id LEFT JOIN profile_assets pa ON pa.user_id = p.user_id {$joins} WHERE {$where} AND pa.diet IS NOT NULL AND pa.diet <> '' GROUP BY pa.diet ORDER BY cnt DESC LIMIT 15";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $diets = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $diets[(string) $row['val']] = (int) $row['cnt'];
+        }
+        $facets['diet'] = $diets;
 
         return $facets;
     }

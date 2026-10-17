@@ -46,6 +46,7 @@ final class FilterBuilder
         $this->addDistanceRadius($filters);
 
         $this->excludeViewer($viewerId);
+        $this->addExcludeContacted($filters, $viewerId);
 
         return [
             'where' => implode(' AND ', $this->where),
@@ -70,8 +71,13 @@ final class FilterBuilder
         }
     }
 
-    private function addInClause(string $column, array $values, string $prefix, ?string $table = null): void
+    private function addInClause(string $column, $values, string $prefix, ?string $table = null): void
     {
+        if (is_string($values) || is_numeric($values)) {
+            $values = [(string) $values];
+        }
+        if (!is_array($values)) return;
+        $values = array_values(array_filter($values, static fn ($v) => $v !== '' && $v !== null));
         if (empty($values)) return;
         $col = $table ? "$table.$column" : "p.$column";
         $placeholders = [];
@@ -139,23 +145,34 @@ final class FilterBuilder
     private function addIncome(array $f): void
     {
         if (!empty($f['income_min'])) {
-            $min = (int) preg_replace('/[^0-9]/', '', $f['income_min']);
-            $this->addFilter('CAST(p.annual_income AS UNSIGNED) >= :inc_min', [':inc_min' => $min]);
+            $this->addFilter($this->incomeLakhsExpr() . ' >= :inc_min', [':inc_min' => (float) $f['income_min']]);
         }
         if (!empty($f['income_max'])) {
-            $max = (int) preg_replace('/[^0-9]/', '', $f['income_max']);
-            $this->addFilter('CAST(p.annual_income AS UNSIGNED) <= :inc_max', [':inc_max' => $max]);
+            $this->addFilter($this->incomeLakhsExpr() . ' <= :inc_max', [':inc_max' => (float) $f['income_max']]);
         }
         if (!empty($f['employed_in'])) {
             $this->addInClause('occupation', $f['employed_in'], 'emp');
         }
     }
 
+    /**
+     * annual_income is stored as a free-text band ("Below 1 Lakh", "1-3 Lakhs",
+     * "10-20 Lakhs", "50 Lakhs+") and occasionally as a raw rupee figure.
+     * Normalise both shapes to lakhs so the income filter compares like with like
+     * instead of casting the band text to a nonsense number.
+     */
+    private function incomeLakhsExpr(string $col = 'p.annual_income'): string
+    {
+        return "CASE WHEN {$col} REGEXP '^[0-9]{5,}' THEN CAST({$col} AS UNSIGNED) / 100000"
+             . " WHEN {$col} REGEXP '[0-9]+' THEN CAST(REGEXP_SUBSTR({$col}, '[0-9]+') AS UNSIGNED)"
+             . " ELSE 0 END";
+    }
+
     private function addLocation(array $f): void
     {
         $this->addInClause('country', $f['country'] ?? [], 'cnt');
         $this->addInClause('state', $f['state'] ?? [], 'st');
-        $this->addInClause('city', $f['city'] ?? [], 'ct');
+        $this->addCityPrefix($f['city'] ?? [], 'ct');
         if (!empty($f['residency_status'])) {
             $this->addJoin('pl', 'LEFT JOIN profile_lifestyle pl ON pl.user_id = p.user_id');
             $this->addInClause('residency_status', $f['residency_status'], 'res', 'pl');
@@ -163,6 +180,23 @@ final class FilterBuilder
         if (!empty($f['willing_to_relocate'])) {
             $this->addFilter('pl_reloc.willing_to_relocate = 1', []);
         }
+    }
+
+    private function addCityPrefix($values, string $prefix): void
+    {
+        if (is_string($values) || is_numeric($values)) {
+            $values = [(string) $values];
+        }
+        if (!is_array($values)) return;
+        $values = array_values(array_filter(array_map('trim', $values), static fn ($v) => $v !== ''));
+        if (empty($values)) return;
+        $clauses = [];
+        foreach ($values as $i => $v) {
+            $key = ":{$prefix}_{$i}";
+            $this->params[$key] = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $v) . '%';
+            $clauses[] = "p.city LIKE {$key} ESCAPE '!'";
+        }
+        $this->where[] = '(' . implode(' OR ', $clauses) . ')';
     }
 
     private function addDistanceRadius(array $f): void
@@ -300,12 +334,26 @@ final class FilterBuilder
 
     private function addSearch(array $f): void
     {
-        if (!empty($f['search'])) {
-            $term = '%' . $f['search'] . '%';
-            $this->where[] = '(p.first_name LIKE :search_term OR p.last_name LIKE :search_term2)';
-            $this->params[':search_term'] = $term;
-            $this->params[':search_term2'] = $term;
+        if (empty($f['search'])) return;
+        $raw = trim((string) $f['search']);
+        if ($raw === '') return;
+        $term = '%' . $raw . '%';
+        $byId = ctype_digit($raw);
+        $this->where[] = '(p.first_name LIKE :search_term OR p.last_name LIKE :search_term2'
+            . ($byId ? ' OR p.user_id = :search_id' : '') . ')';
+        $this->params[':search_term'] = $term;
+        $this->params[':search_term2'] = $term;
+        if ($byId) {
+            $this->params[':search_id'] = (int) $raw;
         }
+    }
+
+    /** Hide profiles the viewer already sent an interest / shortlist / mutual request to. */
+    private function addExcludeContacted(array $f, int $viewerId): void
+    {
+        if (empty($f['exclude_contacted'])) return;
+        $this->where[] = 'p.user_id NOT IN (SELECT target_id FROM matches WHERE user_id = :me_contacted AND status IN (\'interested\',\'shortlisted\',\'mutual\'))';
+        $this->params[':me_contacted'] = $viewerId;
     }
 
     private function excludeViewer(int $viewerId): void

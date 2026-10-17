@@ -211,6 +211,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 location.reload();
             } else {
+                if (result.redirect) {
+                    window.location.href = result.redirect;
+                    return;
+                }
                 alert(result.error || 'Action failed');
                 btn.disabled = false;
                 if (status === 'interested') {
