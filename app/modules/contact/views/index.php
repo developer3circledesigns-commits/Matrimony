@@ -81,10 +81,6 @@
                             <pre class="mb-0 bg-transparent border-0 p-0 lh-sm" style="font-family: inherit; white-space: pre-wrap;">+91 93847 72710</pre>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-telephone text-brand-tertiary flex-shrink-0"></i>
-                            <pre class="mb-0 bg-transparent border-0 p-0 lh-sm" style="font-family: inherit; white-space: pre-wrap;">+91 99526 19776</pre>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-envelope text-brand-tertiary flex-shrink-0"></i>
                             <pre class="mb-0 bg-transparent border-0 p-0 lh-sm" style="font-family: inherit; white-space: pre-wrap;">info@bridegroom-matrimony.com</pre>
                         </div>
@@ -162,7 +158,7 @@
                             </button>
                         </h2>
                         <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#contactFaq">
-                            <div class="accordion-body">You can use the contact form above, email us at info@bridegroom-matrimony.com, or call us at +91 93847 72710 / +91 99526 19776 during business hours.</div>
+                            <div class="accordion-body">You can use the contact form above, email us at info@bridegroom-matrimony.com, or call us at +91 93847 72710 during business hours.</div>
                         </div>
                     </div>
                     <div class="accordion-item border-0 mb-3 shadow-sm" data-aos="fade-up" data-aos-delay="300">

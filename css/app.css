@@ -5863,10 +5863,9 @@ html {
     text-overflow: ellipsis;
 }
 
-/* 2. Show the whole photo - never crop or hide any part.
-      The photo box takes the image's real shape so there is NO letterboxing
-      (no empty bands, no hidden picture), while every card keeps the same
-      overall height. */
+/* 2. Fixed photo box (same size on every card, every breakpoint) with the
+      whole image shown inside it — object-fit: contain never crops/hides any
+      part of the photo, and card sizes never depend on image dimensions. */
 .matches-page .match-photo {
     aspect-ratio: 4 / 5;
     flex: 0 0 auto;

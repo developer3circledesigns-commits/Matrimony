@@ -50,7 +50,6 @@
                 <ul class="footer-links footer-contact-list">
                     <li class="footer-contact-address">No.24/36, Viswanathapuram Main Road, Kodambakkam, Chennai - 600 024.</li>
                     <li><a href="tel:+919384772710">+91 93847 72710</a></li>
-                    <li><a href="tel:+919952619776">+91 99526 19776</a></li>
                     <li><a href="mailto:info@bridegroom-matrimony.com">info@bridegroom-matrimony.com</a></li>
                     
                     <li class="footer-contact-hours">Mon - Sat: 10 AM - 6 PM</li>
