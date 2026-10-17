@@ -85,7 +85,7 @@
                 <div class="modal-footer modal-qr-footer">
                     <button type="submit" class="btn btn-accent w-100 py-2 fw-semibold qr-submit-btn">
                         <span class="qr-btn-text">Register Free</span>
-                        <span class="qr-btn-loading d-none"><span class="spinner-border spinner-border-sm me-1"></span>Creating account...</span>
+                        <span class="qr-btn-loading d-none"><span class="mini-loader me-1"></span>Creating account...</span>
                     </button>
                     <p class="text-center text-muted mt-2 mb-0 qr-terms">By registering, you agree to our Terms &amp; Privacy Policy</p>
                 </div>

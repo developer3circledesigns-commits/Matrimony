@@ -1271,7 +1271,7 @@
         modal.show();
 
         var body = document.getElementById('profile-modal-body');
-        body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        body.innerHTML = '<div class="text-center py-5"><span class="mini-loader mini-loader--lg mini-loader--accent" role="status" aria-label="Loading"></span></div>';
 
         fetch('/api/matches/profile/' + userId, {
             headers: { 'Accept': 'application/json' },
@@ -1653,7 +1653,7 @@
                 var orig = btn.innerHTML;
                 profileSubmitting = true;
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+                btn.innerHTML = '<span class="mini-loader me-1"></span>Saving...';
 
                 fetch('/api/profile/' + section, {
                     method: 'PUT',
@@ -1714,7 +1714,7 @@
                 var id = this.dataset.id;
                 var origHtml = this.innerHTML;
                 this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                this.innerHTML = '<span class="mini-loader"></span>';
                 fetch('/api/profile/photo/' + id, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1767,7 +1767,7 @@
                     var id = self.dataset.id;
                     var origHtml = self.innerHTML;
                     self.disabled = true;
-                    self.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                    self.innerHTML = '<span class="mini-loader"></span>';
                     fetch('/api/profile/photo/' + id, {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
@@ -2036,7 +2036,7 @@
                 document.getElementById('login-error').classList.add('d-none');
                 var btn = loginForm.querySelector('button[type="submit"]');
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Logging in...';
+                btn.innerHTML = '<span class="mini-loader me-1"></span>Logging in...';
             });
         }
 
@@ -2093,7 +2093,7 @@
                 var btn = regForm.querySelector('button[type="submit"]');
                 var orig = btn.innerHTML;
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Creating account...';
+                btn.innerHTML = '<span class="mini-loader me-1"></span>Creating account...';
 
                 var errEl = document.getElementById('register-errors');
                 var errList = document.getElementById('register-errors-list');
@@ -2176,7 +2176,7 @@
             var btn = form.querySelector('button[type="submit"]');
             var orig = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+            btn.innerHTML = '<span class="mini-loader me-1"></span>Sending...';
 
             var data = {
                 name: document.getElementById('name')?.value || '',
@@ -2355,7 +2355,7 @@
         var csrf = document.querySelector('.profile-page')?.dataset?.csrf || '';
         var origHtml = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Applying...';
+        btn.innerHTML = '<span class="mini-loader me-1"></span>Applying...';
 
         fetch('/api/profile/privacy', {
             method: 'PUT',

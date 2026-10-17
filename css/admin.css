@@ -1372,21 +1372,40 @@ body.admin-body .btn.is-busy {
     position: relative;
     color: transparent !important;
 }
+body.admin-body .btn.is-busy::before,
 body.admin-body .btn.is-busy::after {
     content: "";
     position: absolute;
-    inset: 0;
-    margin: auto;
-    width: 14px; height: 14px;
+    top: 50%;
+    width: 13px;
+    height: 13px;
+    margin-top: -6.5px;
     border-radius: 50%;
-    border: 2px solid currentColor;
-    border-top-color: transparent;
+    border: 2px solid #fff;
     color: #fff;
-    animation: adm-spin 0.6s linear infinite;
 }
+body.admin-body .btn.is-busy::before {
+    left: calc(50% - 11px);
+    border-right-color: transparent;
+    animation: adm-spin 0.9s linear infinite;
+}
+body.admin-body .btn.is-busy::after {
+    left: calc(50% - 2px);
+    border-left-color: transparent;
+    animation: adm-spin 0.9s linear infinite reverse;
+}
+body.admin-body .btn-secondary.is-busy::before,
+body.admin-body .btn-secondary.is-busy::after,
+body.admin-body .btn-outline-secondary.is-busy::before,
+body.admin-body .btn-outline-secondary.is-busy::after,
+body.admin-body .btn-ghost.is-busy::before,
+body.admin-body .btn-ghost.is-busy::after { color: var(--adm-text); border-color: currentColor; }
 body.admin-body .btn-secondary.is-busy::after,
 body.admin-body .btn-outline-secondary.is-busy::after,
-body.admin-body .btn-ghost.is-busy::after { color: var(--adm-text); }
+body.admin-body .btn-ghost.is-busy::after { border-left-color: transparent; }
+body.admin-body .btn-secondary.is-busy::before,
+body.admin-body .btn-outline-secondary.is-busy::before,
+body.admin-body .btn-ghost.is-busy::before { border-right-color: transparent; }
 
 @keyframes adm-spin { to { transform: rotate(360deg); } }
 
@@ -1762,13 +1781,78 @@ body.admin-body .form-select.is-invalid:focus {
     font-weight: 500;
     backdrop-filter: blur(2px);
 }
-.admin-busy-spinner {
-    width: 18px;
-    height: 18px;
+/* Matrimony-themed page loader used by the full-page busy state */
+.matrimony-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 190px;
+    padding: 1.6rem 1.5rem 1.4rem;
+    background: rgba(45, 22, 86, 0.96);
+    border: 1px solid rgba(254, 214, 182, 0.4);
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+.matrimony-loader__rings {
+    position: relative;
+    width: 84px;
+    height: 46px;
+    display: block;
+    animation: ml-rise 1.6s ease-in-out infinite;
+}
+.matrimony-loader__ring {
+    position: absolute;
+    top: 3px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #fff;
-    animation: adm-spin 0.6s linear infinite;
+    border: 3px solid #fed6b6;
+}
+.matrimony-loader__ring--a {
+    left: 6px;
+    border-right-color: transparent;
+    animation: ml-spin 1.4s linear infinite;
+}
+.matrimony-loader__ring--b {
+    right: 6px;
+    border-color: #9565be;
+    border-left-color: transparent;
+    animation: ml-spin 1.4s linear infinite reverse;
+}
+.matrimony-loader__heart {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    transform: translate(-50%, -50%);
+    animation: ml-heart 1s ease-in-out infinite;
+}
+.matrimony-loader__heart svg { display: block; width: 100%; height: 100%; fill: #ff6b81; }
+.matrimony-loader__brand {
+    display: block;
+    margin-top: 0.55rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fed6b6;
+}
+.matrimony-loader__text {
+    display: block;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+@keyframes ml-spin { to { transform: rotate(360deg); } }
+@keyframes ml-heart { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.22); } }
+@keyframes ml-rise { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+    .matrimony-loader__rings,
+    .matrimony-loader__ring,
+    .matrimony-loader__heart { animation: none; }
 }
 
 .admin-scroll-y { max-height: 460px; overflow-y: auto; }

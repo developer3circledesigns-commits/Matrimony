@@ -182,7 +182,7 @@ $heightFt = $heightCm ? floor($heightCm / 30.48) . "'" . round(fmod($heightCm, 3
 document.addEventListener('DOMContentLoaded', function() {
     function sendAction(targetId, status, csrf, btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Please wait...';
+        btn.innerHTML = '<span class="mini-loader" role="status" aria-hidden="true"></span> Please wait...';
         
         fetch('/api/matches/action', {
             method: 'POST',

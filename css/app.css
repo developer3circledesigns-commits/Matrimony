@@ -5926,3 +5926,130 @@ html {
     .matches-page .verified-badge { width: 18px; height: 18px; }
     .matches-page .verified-badge svg { width: 9px; height: 9px; }
 }
+
+/* =============================================================
+   Page Loader — matrimony themed
+   Interlocking wedding rings + pulsing heart. Replaces the generic
+   Bootstrap spinner everywhere: the global loading modal (all actions),
+   inline button loaders and section loaders.
+   ============================================================= */
+@keyframes ml-spin { to { transform: rotate(360deg); } }
+@keyframes ml-heart { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.22); } }
+@keyframes ml-rise { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* --- Full-size loader (global loading modal, section loaders) --- */
+.matrimony-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 190px;
+    padding: 1.6rem 1.5rem 1.4rem;
+    background: rgba(45, 22, 86, 0.94);
+    border: 1px solid rgba(254, 214, 182, 0.35);
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 18px 50px rgba(45, 22, 86, 0.35);
+}
+.matrimony-loader__rings {
+    position: relative;
+    width: 84px;
+    height: 46px;
+    display: block;
+    animation: ml-rise 1.6s ease-in-out infinite;
+}
+.matrimony-loader__ring {
+    position: absolute;
+    top: 3px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid var(--brand-accent, #fed6b6);
+}
+.matrimony-loader__ring--a {
+    left: 6px;
+    border-right-color: transparent;
+    animation: ml-spin 1.4s linear infinite;
+}
+.matrimony-loader__ring--b {
+    right: 6px;
+    border-color: var(--brand-tertiary, #9565be);
+    border-left-color: transparent;
+    animation: ml-spin 1.4s linear infinite reverse;
+}
+.matrimony-loader__heart {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    transform: translate(-50%, -50%);
+    animation: ml-heart 1s ease-in-out infinite;
+}
+.matrimony-loader__heart svg { display: block; width: 100%; height: 100%; fill: #ff6b81; }
+.matrimony-loader__brand {
+    margin: 0.55rem 0 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-accent, #fed6b6);
+}
+.matrimony-loader__text {
+    margin: 0;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* --- Compact inline loader (buttons, badges, small actions) --- */
+.mini-loader {
+    display: inline-block;
+    position: relative;
+    width: 1.2em;
+    height: 1em;
+    vertical-align: -0.15em;
+    color: inherit;
+    flex: 0 0 auto;
+}
+.mini-loader::before,
+.mini-loader::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 0.8em;
+    height: 0.8em;
+    margin-top: -0.4em;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+}
+.mini-loader::before {
+    left: 0;
+    border-right-color: transparent;
+    animation: ml-spin 1s linear infinite;
+}
+.mini-loader::after {
+    right: 0;
+    border-left-color: transparent;
+    animation: ml-spin 1s linear infinite reverse;
+}
+.mini-loader--lg {
+    display: inline-block;
+    width: 5rem;
+    height: 4.2rem;
+}
+.mini-loader--lg::before,
+.mini-loader--lg::after {
+    width: 2.7rem;
+    height: 2.7rem;
+    margin-top: -1.35rem;
+    border-width: 3px;
+}
+.mini-loader--accent { color: var(--brand-tertiary, #9565be); }
+
+/* matches page forces square corners on everything — keep loader rings round */
+.matches-page .mini-loader::before,
+.matches-page .mini-loader::after,
+.matches-page .mini-loader--lg::before,
+.matches-page .mini-loader--lg::after { border-radius: 50% !important; }
+

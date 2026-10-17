@@ -459,7 +459,16 @@
         var el = document.createElement('div');
         el.className = 'admin-busy-overlay';
         el.setAttribute('role', 'status');
-        el.innerHTML = '<span class="admin-busy-spinner"></span><span>' + (text || 'Working…') + '</span>';
+        el.innerHTML = '<span class="matrimony-loader">'
+            + '<span class="matrimony-loader__rings">'
+            + '<span class="matrimony-loader__ring matrimony-loader__ring--a"></span>'
+            + '<span class="matrimony-loader__ring matrimony-loader__ring--b"></span>'
+            + '<span class="matrimony-loader__heart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>'
+            + '</span>'
+            + '<span class="matrimony-loader__brand">Matrimony Admin</span>'
+            + '<span class="matrimony-loader__text">' + (text || 'Working…') + '</span>'
+            + '<span class="visually-hidden">Loading</span>'
+            + '</span>';
         document.body.appendChild(el);
     }
 

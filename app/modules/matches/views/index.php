@@ -472,7 +472,7 @@
             </div>
             <div class="modal-body" id="profile-modal-body">
                 <div class="text-center py-5" role="status">
-                    <div class="spinner-border text-primary" aria-hidden="true"></div>
+                    <span class="mini-loader mini-loader--lg mini-loader--accent" aria-hidden="true"></span>
                     <p class="text-muted mt-2">Loading profile...</p>
                 </div>
             </div>

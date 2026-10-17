@@ -1010,7 +1010,7 @@ $gender = $p['gender'] ?? '';
                         <div class="card-header"><h5 class="mb-0">Recent Activity</h5></div>
                         <div class="card-body p-0" id="activity-timeline">
                             <div class="text-center py-4 text-muted small">
-                                <div class="spinner-border spinner-border-sm me-1"></div> Loading...
+                                <span class="mini-loader mini-loader--accent me-1" role="status" aria-hidden="true"></span> Loading...
                             </div>
                         </div>
                     </div>
