@@ -66,18 +66,30 @@ final class MembershipService
         return null;
     }
 
+    public static function profileUsageCount(int $membershipId, int $userId, string $startsAt, string $endsAt): int
+    {
+        try {
+            $pdo = Connection::pdo();
+            $s = $pdo->prepare("SELECT COUNT(*) FROM (
+                SELECT target_user_id AS target_id FROM contact_reveals WHERE membership_id = :mid
+                UNION
+                SELECT target_id FROM matches WHERE user_id = :u AND status IN ('interested','mutual') AND created_at >= :starts AND created_at <= :ends
+            ) used_profiles");
+            $s->execute([':mid' => $membershipId, ':u' => $userId, ':starts' => $startsAt, ':ends' => $endsAt]);
+            return (int) $s->fetchColumn();
+        } catch (\Throwable $e) {
+            return -1;
+        }
+    }
+
     public static function enrich(array $m): array
     {
-        $pdo = Connection::pdo();
-        // Source of truth for usage = reveal ledger count
-        try {
-            $s = $pdo->prepare('SELECT COUNT(*) FROM contact_reveals WHERE membership_id = :mid');
-            $s->execute([':mid' => $m['id']]);
-            $used = (int) $s->fetchColumn();
-        } catch (\Throwable $e) {
+        $used = self::profileUsageCount((int) $m['id'], (int) $m['user_id'], (string) $m['starts_at'], (string) $m['ends_at']);
+        if ($used < 0) {
             $used = (int) ($m['contacts_used'] ?? 0);
         }
         $m['contacts_used'] = $used;
+        $pdo = Connection::pdo();
         try {
             $s = $pdo->prepare("SELECT COUNT(*) FROM matches WHERE user_id = :u AND status IN ('interested','mutual') AND created_at >= :starts AND created_at <= :ends");
             $s->execute([':u' => $m['user_id'], ':starts' => $m['starts_at'], ':ends' => $m['ends_at']]);
@@ -100,13 +112,35 @@ final class MembershipService
         return $m;
     }
 
-    public static function canSendInterest(int $userId): array
+    public static function canSendInterest(int $userId, ?int $targetId = null): array
     {
         $m = self::activeFor($userId);
         if (!$m) {
             return ['ok' => false, 'reason' => 'no_active_plan', 'membership' => null];
         }
+        if (empty($m['legacy_no_cap']) && $m['contacts_remaining'] !== null && (int) $m['contacts_remaining'] <= 0) {
+            if ($targetId === null || !self::profileCountedInMembership($m, $targetId)) {
+                return ['ok' => false, 'reason' => 'allowance_exhausted', 'membership' => $m];
+            }
+        }
         return ['ok' => true, 'membership' => $m];
+    }
+
+    public static function profileCountedInMembership(array $m, int $targetId): bool
+    {
+        try {
+            $pdo = Connection::pdo();
+            $s = $pdo->prepare('SELECT 1 FROM contact_reveals WHERE membership_id = :mid AND target_user_id = :t LIMIT 1');
+            $s->execute([':mid' => $m['id'], ':t' => $targetId]);
+            if ($s->fetchColumn()) {
+                return true;
+            }
+            $s = $pdo->prepare("SELECT 1 FROM matches WHERE user_id = :u AND target_id = :t AND status IN ('interested','mutual') AND created_at >= :starts AND created_at <= :ends LIMIT 1");
+            $s->execute([':u' => $m['user_id'], ':t' => $targetId, ':starts' => $m['starts_at'], ':ends' => $m['ends_at']]);
+            return (bool) $s->fetchColumn();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     public static function canReveal(int $viewerId, int $targetId): array
@@ -149,7 +183,7 @@ final class MembershipService
             return ['ok' => true, 'already' => true, 'membership' => $m];
         }
         $unlimited = empty($m['legacy_no_cap']) && (int) ($m['is_unlimited_snapshot'] ?? 0) === 1;
-        if (!$unlimited && ($m['contacts_remaining'] ?? 0) <= 0) {
+        if (!$unlimited && ($m['contacts_remaining'] ?? 0) <= 0 && !self::profileCountedInMembership($m, $targetId)) {
             return ['ok' => false, 'reason' => 'allowance_exhausted', 'membership' => $m];
         }
         return ['ok' => true, 'already' => false, 'membership' => $m];

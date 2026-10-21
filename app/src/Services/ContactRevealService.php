@@ -47,19 +47,19 @@ final class ContactRevealService
                 return ['success' => false, 'error' => 'Membership data needs an upgrade. Please contact support.', 'code' => 'legacy_membership'];
             }
             if (!$unlimited) {
-                $s = $pdo->prepare('SELECT COUNT(*) FROM contact_reveals WHERE membership_id = :mid');
-                $s->execute([':mid' => $locked['id']]);
-                $used = (int) $s->fetchColumn();
+                $used = MembershipService::profileUsageCount((int) $locked['id'], (int) $locked['user_id'], (string) $locked['starts_at'], (string) $locked['ends_at']);
                 $limit = ($locked['contact_limit_snapshot'] ?? null) !== null ? (int) $locked['contact_limit_snapshot'] : 0;
-                if ($used >= $limit) {
+                if ($used >= $limit && !MembershipService::profileCountedInMembership($locked, $targetId)) {
                     $pdo->rollBack();
                     return ['success' => false, 'error' => 'Contact allowance exhausted. Please upgrade your plan.', 'code' => 'allowance_exhausted'];
                 }
             }
             $stmt = $pdo->prepare('INSERT INTO contact_reveals (viewer_user_id, target_user_id, membership_id) VALUES (:v,:t,:m)');
             $stmt->execute([':v' => $viewerId, ':t' => $targetId, ':m' => $locked['id']]);
-            $pdo->prepare('UPDATE memberships m SET m.contacts_used = (SELECT COUNT(*) FROM contact_reveals cr WHERE cr.membership_id = m.id) WHERE m.id = :mid')
-                ->execute([':mid' => $locked['id']]);
+            $newUsed = MembershipService::profileUsageCount((int) $locked['id'], (int) $locked['user_id'], (string) $locked['starts_at'], (string) $locked['ends_at']);
+            if ($newUsed >= 0) {
+                $pdo->prepare('UPDATE memberships SET contacts_used = :used WHERE id = :mid')->execute([':used' => $newUsed, ':mid' => $locked['id']]);
+            }
             $pdo->commit();
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {

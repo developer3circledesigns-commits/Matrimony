@@ -20,11 +20,11 @@
   </div>
   <?php if ($unlimited): ?>
     <div class="progress mt-2" style="height:10px"><div class="progress-bar bg-success" style="width:100%"></div></div>
-    <p class="text-muted small mt-2 mb-0">Unlimited contact reveals with this plan.</p>
+    <p class="text-muted small mt-2 mb-0">Unlimited profile usage with this plan.</p>
   <?php else: ?>
     <div class="progress mt-2" style="height:10px"><div class="progress-bar <?= $remaining === 0 ? 'bg-danger' : 'bg-success' ?>" style="width:<?= $percent ?>%"></div></div>
     <p class="small mt-2 mb-0 <?= $remaining === 0 ? 'text-danger fw-medium' : 'text-muted' ?>">
-      <?= $remaining === 0 ? 'Plan limit reached. Upgrade to reveal more profiles.' : ((int) $remaining . ' profile reveal' . ($remaining === 1 ? '' : 's') . ' remaining') ?>
+      <?= $remaining === 0 ? 'Plan limit reached. Upgrade to use more profiles.' : ((int) $remaining . ' profile' . ($remaining === 1 ? '' : 's') . ' remaining') ?>
     </p>
   <?php endif; ?>
   <?php if (!empty($membership['legacy_no_cap'])): ?>

@@ -20,11 +20,11 @@
           <?php endif; ?>
         </div>
         <div class="plans-current__stat">
-          <span class="plans-current__label">Contacts</span>
+          <span class="plans-current__label">Profiles used</span>
           <span class="plans-current__big"><?=
-            $membership['contacts_remaining'] === null ? '∞' : ((int) $membership['contacts_remaining'] . '/' . (((int) $membership['contacts_used'] + (int) $membership['contacts_remaining']) ?: 1))
+            $membership['contacts_remaining'] === null ? ((int) $membership['contacts_used'] . ' used') : ((int) $membership['contacts_used'] . '/' . (((int) $membership['contacts_used'] + (int) $membership['contacts_remaining']) ?: 1))
           ?></span>
-          <span class="plans-current__hint"><?= $membership['contacts_remaining'] === null ? 'Unlimited views' : ((int) $membership['contacts_used'] . ' used so far') ?></span>
+          <span class="plans-current__hint"><?= $membership['contacts_remaining'] === null ? 'Unlimited usage' : ((int) $membership['contacts_remaining'] . ' remaining') ?></span>
         </div>
         <div class="plans-current__stat">
           <span class="plans-current__label">Interests sent</span>

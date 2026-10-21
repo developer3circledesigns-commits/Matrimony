@@ -356,6 +356,7 @@ final class PaymentService
             $pdo = Connection::pdo();
             $stmt = $pdo->prepare('SELECT p.*, ar.status AS activation_status,
                     m.id AS membership_id, m.status AS membership_status,
+                    m.user_id AS membership_user_id, m.starts_at AS membership_starts_at, m.ends_at AS membership_ends_at,
                     m.contact_limit_snapshot, m.is_unlimited_snapshot,
                     (SELECT COUNT(*) FROM contact_reveals cr WHERE cr.membership_id = m.id) AS membership_contacts_used,
                     (SELECT COUNT(*) FROM matches mt WHERE mt.user_id = p.user_id AND mt.status IN (\'interested\',\'mutual\') AND m.id IS NOT NULL AND mt.created_at >= m.starts_at AND mt.created_at <= m.ends_at) AS membership_interests_sent
@@ -364,7 +365,22 @@ final class PaymentService
                 LEFT JOIN memberships m ON m.purchase_id = p.id
                 WHERE p.user_id = :u ORDER BY p.id DESC LIMIT ' . max(1, min(100, $limit)));
             $stmt->execute([':u' => $userId]);
-            return $stmt->fetchAll();
+            $rows = $stmt->fetchAll();
+            foreach ($rows as &$row) {
+                if (!empty($row['membership_id'])) {
+                    $used = MembershipService::profileUsageCount(
+                        (int) $row['membership_id'],
+                        (int) $row['membership_user_id'],
+                        (string) $row['membership_starts_at'],
+                        (string) $row['membership_ends_at']
+                    );
+                    if ($used >= 0) {
+                        $row['membership_contacts_used'] = $used;
+                    }
+                }
+            }
+            unset($row);
+            return $rows;
         } catch (\Throwable $e) {
             return []; // tables missing pre-migration
         }

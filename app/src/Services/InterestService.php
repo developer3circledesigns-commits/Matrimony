@@ -41,7 +41,7 @@ final class InterestService
         } catch (\Throwable $e) {
         }
         // Membership gate
-        $gate = MembershipService::canSendInterest($viewerId);
+        $gate = MembershipService::canSendInterest($viewerId, $targetId);
         if (!$gate['ok']) {
             try {
                 $s = $pdo->prepare('SELECT id,status,starts_at,ends_at FROM memberships WHERE user_id = :u ORDER BY id DESC LIMIT 1');
@@ -50,6 +50,9 @@ final class InterestService
                     @error_log('Interest gate: user ' . $viewerId . ' has membership ' . json_encode($row));
                 }
             } catch (\Throwable $e) {
+            }
+            if (($gate['reason'] ?? '') === 'allowance_exhausted') {
+                return ['ok' => false, 'error' => 'Your plan profile allowance is used up. Upgrade to send more interests.', 'code' => 'allowance_exhausted'];
             }
             return ['ok' => false, 'error' => 'An active membership is required to send interests. Please choose a plan.', 'code' => 'no_active_plan', 'redirect' => '/plans'];
         }
