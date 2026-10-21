@@ -78,6 +78,13 @@ final class MembershipService
             $used = (int) ($m['contacts_used'] ?? 0);
         }
         $m['contacts_used'] = $used;
+        try {
+            $s = $pdo->prepare("SELECT COUNT(*) FROM matches WHERE user_id = :u AND status IN ('interested','mutual') AND created_at >= :starts AND created_at <= :ends");
+            $s->execute([':u' => $m['user_id'], ':starts' => $m['starts_at'], ':ends' => $m['ends_at']]);
+            $m['interests_sent'] = (int) $s->fetchColumn();
+        } catch (\Throwable $e) {
+            $m['interests_sent'] = 0;
+        }
         // Pre-migration rows without snapshots must NOT be treated as unlimited.
         $m['legacy_no_cap'] = !array_key_exists('contact_limit_snapshot', $m) && !array_key_exists('is_unlimited_snapshot', $m);
         $unlimited = !$m['legacy_no_cap'] && (int) ($m['is_unlimited_snapshot'] ?? 0) === 1;

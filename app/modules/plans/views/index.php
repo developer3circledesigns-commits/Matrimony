@@ -26,6 +26,11 @@
           ?></span>
           <span class="plans-current__hint"><?= $membership['contacts_remaining'] === null ? 'Unlimited views' : ((int) $membership['contacts_used'] . ' used so far') ?></span>
         </div>
+        <div class="plans-current__stat">
+          <span class="plans-current__label">Interests sent</span>
+          <span class="plans-current__big"><?= (int) ($membership['interests_sent'] ?? 0) ?></span>
+          <span class="plans-current__hint">for this plan</span>
+        </div>
       </div>
     <?php endif; ?>
   </div>

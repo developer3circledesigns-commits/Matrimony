@@ -357,7 +357,8 @@ final class PaymentService
             $stmt = $pdo->prepare('SELECT p.*, ar.status AS activation_status,
                     m.id AS membership_id, m.status AS membership_status,
                     m.contact_limit_snapshot, m.is_unlimited_snapshot,
-                    (SELECT COUNT(*) FROM contact_reveals cr WHERE cr.membership_id = m.id) AS membership_contacts_used
+                    (SELECT COUNT(*) FROM contact_reveals cr WHERE cr.membership_id = m.id) AS membership_contacts_used,
+                    (SELECT COUNT(*) FROM matches mt WHERE mt.user_id = p.user_id AND mt.status IN (\'interested\',\'mutual\') AND m.id IS NOT NULL AND mt.created_at >= m.starts_at AND mt.created_at <= m.ends_at) AS membership_interests_sent
                 FROM purchases p
                 LEFT JOIN activation_requests ar ON ar.purchase_id = p.id
                 LEFT JOIN memberships m ON m.purchase_id = p.id

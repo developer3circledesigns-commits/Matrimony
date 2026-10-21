@@ -30,6 +30,10 @@
   <?php if (!empty($membership['legacy_no_cap'])): ?>
     <div class="alert alert-warning small mt-3 mb-0">This older membership has no contact limit recorded. Please contact support before revealing more profiles.</div>
   <?php endif; ?>
+  <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+    <span class="fw-medium">Interests sent for this exact plan</span>
+    <strong><?= (int) ($membership['interests_sent'] ?? 0) ?></strong>
+  </div>
 </div>
 </div></div>
 <?php else: ?>
@@ -46,6 +50,7 @@
           <th class="text-center">Plan</th>
           <th class="text-center">Amount</th>
           <th class="text-center">Profiles used</th>
+          <th class="text-center">Interests sent</th>
           <th class="text-center">Payment</th>
           <th class="text-center">Activation</th>
         </tr></thead>
@@ -63,6 +68,7 @@
             <td class="text-center"><?= htmlspecialchars($p['plan_name_snapshot']) ?></td>
             <td class="text-center">&#8377;<?= number_format($p['amount_paise'] / 100, 0) ?></td>
             <td class="text-center"><?= $usageText ?></td>
+            <td class="text-center"><?= empty($p['membership_id']) ? '&mdash;' : (int) ($p['membership_interests_sent'] ?? 0) ?></td>
             <td class="text-center"><?= htmlspecialchars($p['payment_status']) ?></td>
             <td class="text-center"><?= !empty($p['activation_status']) ? htmlspecialchars($p['activation_status']) : '&mdash;' ?></td>
           </tr>
