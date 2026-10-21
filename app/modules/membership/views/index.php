@@ -11,7 +11,7 @@
 <div class="card mb-3 mx-auto" style="max-width:980px;"><div class="card-body">
 <div class="text-center">
 <h5><?= htmlspecialchars($planName) ?> <span class="badge bg-success">Active</span></h5>
-<p class="mb-2">Activated: <?= htmlspecialchars($membership['activated_at'] ?? $membership['starts_at']) ?> &middot; Expires: <b><?= htmlspecialchars($membership['ends_at']) ?></b> (<?= (int) $membership['days_remaining'] ?> days left)</p>
+<p class="mb-2 text-center" style="text-align:center">Activated: <?= htmlspecialchars($membership['activated_at'] ?? $membership['starts_at']) ?> &middot; Expires: <b><?= htmlspecialchars($membership['ends_at']) ?></b> (<?= (int) $membership['days_remaining'] ?> days left)</p>
 </div>
 <div class="mx-auto" style="max-width:620px">
   <div class="d-flex justify-content-between align-items-center">
