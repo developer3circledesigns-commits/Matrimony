@@ -58,6 +58,8 @@ final class ContactRevealService
             }
             $stmt = $pdo->prepare('INSERT INTO contact_reveals (viewer_user_id, target_user_id, membership_id) VALUES (:v,:t,:m)');
             $stmt->execute([':v' => $viewerId, ':t' => $targetId, ':m' => $locked['id']]);
+            $pdo->prepare('UPDATE memberships m SET m.contacts_used = (SELECT COUNT(*) FROM contact_reveals cr WHERE cr.membership_id = m.id) WHERE m.id = :mid')
+                ->execute([':mid' => $locked['id']]);
             $pdo->commit();
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {

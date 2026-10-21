@@ -354,7 +354,14 @@ final class PaymentService
     {
         try {
             $pdo = Connection::pdo();
-            $stmt = $pdo->prepare('SELECT p.*, ar.status AS activation_status FROM purchases p LEFT JOIN activation_requests ar ON ar.purchase_id = p.id WHERE p.user_id = :u ORDER BY p.id DESC LIMIT ' . max(1, min(100, $limit)));
+            $stmt = $pdo->prepare('SELECT p.*, ar.status AS activation_status,
+                    m.id AS membership_id, m.status AS membership_status,
+                    m.contact_limit_snapshot, m.is_unlimited_snapshot,
+                    (SELECT COUNT(*) FROM contact_reveals cr WHERE cr.membership_id = m.id) AS membership_contacts_used
+                FROM purchases p
+                LEFT JOIN activation_requests ar ON ar.purchase_id = p.id
+                LEFT JOIN memberships m ON m.purchase_id = p.id
+                WHERE p.user_id = :u ORDER BY p.id DESC LIMIT ' . max(1, min(100, $limit)));
             $stmt->execute([':u' => $userId]);
             return $stmt->fetchAll();
         } catch (\Throwable $e) {

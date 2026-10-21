@@ -74,6 +74,8 @@ $ok('interest allowed with plan', !empty($r['ok']));
 $r1=ContactRevealService::reveal($viewer,$target);
 $ok('first reveal ok', !empty($r1['success']) && empty($r1['repeat']));
 $c1=(int)$pdo->query("SELECT COUNT(*) FROM contact_reveals WHERE viewer_user_id=$viewer AND target_user_id=$target")->fetchColumn();
+$synced=(int)$pdo->query("SELECT contacts_used FROM memberships WHERE user_id=$viewer AND status='active'")->fetchColumn();
+$ok('exact plan counter synced', $synced===1);
 $r2=ContactRevealService::reveal($viewer,$target);
 $c2=(int)$pdo->query("SELECT COUNT(*) FROM contact_reveals WHERE viewer_user_id=$viewer AND target_user_id=$target")->fetchColumn();
 $ok('repeat reveal deduped', !empty($r2['success']) && $c1===1 && $c2===1);
