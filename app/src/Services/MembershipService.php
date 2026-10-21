@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Matrimony\Services;
 
 use Matrimony\Database\Connection;
+use Matrimony\Database\Schema;
 use Matrimony\Security\AuditService;
 
 /**
@@ -16,28 +17,53 @@ final class MembershipService
     public static function activeFor(int $userId): ?array
     {
         $pdo = Connection::pdo();
+        $queries = [];
         try {
-            if (\Matrimony\Database\Schema::has('membership_plans', 'slug')) {
-                $stmt = $pdo->prepare("SELECT m.*, p.slug AS plan_slug, p.name AS plan_name
+            if (Schema::has('membership_plans', 'slug')) {
+                $queries[] = "SELECT m.*, p.slug AS plan_slug, p.name AS plan_name
                     FROM memberships m LEFT JOIN membership_plans p ON p.id = m.plan_id
                     WHERE m.user_id = :u AND m.status = 'active' AND m.starts_at <= UTC_TIMESTAMP() AND m.ends_at > UTC_TIMESTAMP()
-                    ORDER BY m.ends_at DESC LIMIT 1");
-            } else {
-                // Legacy schema fallback (migration pending)
-                $stmt = $pdo->prepare("SELECT m.*, NULL AS plan_slug, NULL AS plan_name
-                    FROM memberships m
-                    WHERE m.user_id = :u AND m.status = 'active' AND m.starts_at <= UTC_TIMESTAMP() AND m.ends_at > UTC_TIMESTAMP()
-                    ORDER BY m.ends_at DESC LIMIT 1");
+                    ORDER BY m.ends_at DESC LIMIT 1";
             }
+        } catch (\Throwable $e) {
+        }
+        $queries[] = "SELECT m.*, NULL AS plan_slug, NULL AS plan_name
+            FROM memberships m
+            WHERE m.user_id = :u AND m.status = 'active' AND m.starts_at <= UTC_TIMESTAMP() AND m.ends_at > UTC_TIMESTAMP()
+            ORDER BY m.ends_at DESC LIMIT 1";
+
+        foreach ($queries as $sql) {
+            try {
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([':u' => $userId]);
+                $m = $stmt->fetch();
+                if ($m) {
+                    return self::enrich($m);
+                }
+            } catch (\Throwable $e) {
+                @error_log('MembershipService::activeFor query failed for user ' . $userId . ': ' . $e->getMessage());
+            }
+        }
+
+        // Tolerate small timezone/clock drift between PHP and MySQL around starts_at.
+        try {
+            $stmt = $pdo->prepare("SELECT m.*, NULL AS plan_slug, NULL AS plan_name
+                FROM memberships m
+                WHERE m.user_id = :u AND m.status = 'active'
+                  AND (m.starts_at IS NULL OR m.starts_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 6 HOUR))
+                  AND m.ends_at > UTC_TIMESTAMP()
+                ORDER BY m.ends_at DESC LIMIT 1");
             $stmt->execute([':u' => $userId]);
             $m = $stmt->fetch();
-            if (!$m) {
-                return null;
+            if ($m) {
+                @error_log('MembershipService::activeFor used start-time tolerance for user ' . $userId . ' membership ' . $m['id']);
+                return self::enrich($m);
             }
-            return self::enrich($m);
         } catch (\Throwable $e) {
-            return null;
+            @error_log('MembershipService::activeFor tolerance query failed for user ' . $userId . ': ' . $e->getMessage());
         }
+
+        return null;
     }
 
     public static function enrich(array $m): array
@@ -61,8 +87,9 @@ final class MembershipService
         } else {
             $m['contacts_remaining'] = $unlimited ? null : max(0, ($limit ?? 0) - $used);
         }
-        $m['is_expired'] = strtotime($m['ends_at']) <= time();
-        $m['days_remaining'] = max(0, (int) floor((strtotime($m['ends_at']) - time()) / 86400));
+        $endsAt = strtotime((string) $m['ends_at'] . ' UTC');
+        $m['is_expired'] = $endsAt !== false && $endsAt <= time();
+        $m['days_remaining'] = $endsAt === false ? 0 : max(0, (int) floor(($endsAt - time()) / 86400));
         return $m;
     }
 

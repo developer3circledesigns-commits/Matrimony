@@ -43,6 +43,14 @@ final class InterestService
         // Membership gate
         $gate = MembershipService::canSendInterest($viewerId);
         if (!$gate['ok']) {
+            try {
+                $s = $pdo->prepare('SELECT id,status,starts_at,ends_at FROM memberships WHERE user_id = :u ORDER BY id DESC LIMIT 1');
+                $s->execute([':u' => $viewerId]);
+                if ($row = $s->fetch()) {
+                    @error_log('Interest gate: user ' . $viewerId . ' has membership ' . json_encode($row));
+                }
+            } catch (\Throwable $e) {
+            }
             return ['ok' => false, 'error' => 'An active membership is required to send interests. Please choose a plan.', 'code' => 'no_active_plan', 'redirect' => '/plans'];
         }
         // Duplicate active interest guard
