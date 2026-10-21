@@ -42,6 +42,16 @@ final class Connection
             throw new RuntimeException('Database connection failed: ' . $e->getMessage());
         }
 
+        // Payments, memberships and the email outbox use UTC_TIMESTAMP()
+        // everywhere. Pin the connection timezone so DEFAULT CURRENT_TIMESTAMP
+        // cannot drift between hosting environments. A restricted host may
+        // disallow SET; that must not take the whole app offline.
+        try {
+            self::$pdo->exec("SET time_zone = '+00:00'");
+        } catch (PDOException $e) {
+            @error_log('Connection: could not pin the MySQL session timezone to UTC.');
+        }
+
         return self::$pdo;
     }
 

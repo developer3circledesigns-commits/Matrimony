@@ -5,8 +5,8 @@ $rows = is_array($rows ?? null) ? $rows : [];
 
 <?= admin_chips('outbox', [
     '' => 'All',
-    'pending' => 'Pending',
     'queued' => 'Queued',
+    'sending' => 'Sending',
     'sent' => 'Sent',
     'failed' => 'Failed',
 ], (string) $status) ?>

@@ -27,8 +27,8 @@ final class CheckoutController extends Controller
         $purchase = null;
         if ($ref !== '' || $orderId !== '') {
             try {
-                $s = $pdo->prepare('SELECT * FROM purchases WHERE user_id = :u AND (public_reference = :r OR gateway_order_id = :o) LIMIT 1');
-                $s->execute([':u' => $userId, ':r' => $ref, ':o' => $orderId]);
+                $s = $pdo->prepare('SELECT * FROM purchases WHERE user_id = :u AND plan_id = :p AND (public_reference = :r OR gateway_order_id = :o) LIMIT 1');
+                $s->execute([':u' => $userId, ':p' => $plan['id'], ':r' => $ref, ':o' => $orderId]);
                 $purchase = $s->fetch();
             } catch (\Throwable $e) {
                 $purchase = false; // payments tables missing pre-migration

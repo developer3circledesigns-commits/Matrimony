@@ -91,14 +91,34 @@ if (str_ends_with($path, '/review')) {
 if (str_ends_with($path, '/retry')) {
     $fallback = admin_return_to('/admin/outbox');
     Authorization::requireReauth();
-    [$sent, $failed] = EmailOutboxService::processDue(25);
-    AuditService::log((int) $admin['id'], 'admin.outbox.retry', null, null, ['sent' => $sent, 'failed' => $failed]);
+    $messageId = (int) ($_POST['message_id'] ?? 0);
+    if ($messageId > 0) {
+        $s = Connection::pdo()->prepare("SELECT status FROM email_outbox WHERE id = :id LIMIT 1");
+        $s->execute([':id' => $messageId]);
+        $status = (string) ($s->fetchColumn() ?: '');
+        if ($status !== 'failed') {
+            admin_respond([
+                'success' => false,
+                'error' => 'Only failed messages can be retried',
+                'message' => 'That message is not in the failed queue.',
+            ], $fallback, 422);
+        }
+        // Reset the backoff so an explicit admin retry runs immediately.
+        Connection::pdo()->prepare("UPDATE email_outbox SET next_attempt_at = UTC_TIMESTAMP(), last_error = NULL WHERE id = :id AND status = 'failed'")
+            ->execute([':id' => $messageId]);
+        [$sent, $failed] = EmailOutboxService::processDue(1, $messageId);
+    } else {
+        [$sent, $failed] = EmailOutboxService::processDue(25);
+    }
+    AuditService::log((int) $admin['id'], 'admin.outbox.retry', null, null, ['sent' => $sent, 'failed' => $failed, 'message_id' => $messageId ?: null]);
     admin_respond([
-        'success' => true,
+        'success' => $failed === 0,
         'sent' => $sent,
         'failed' => $failed,
-        'message' => $sent . ' email' . ($sent === 1 ? '' : 's') . ' sent, ' . $failed . ' failed.',
-    ], $fallback);
+        'message' => $messageId > 0
+            ? 'Retry finished: ' . ($sent === 1 ? 'delivered' : 'not delivered') . '.'
+            : ($sent . ' email' . ($sent === 1 ? '' : 's') . ' sent, ' . $failed . ' failed.'),
+    ], $fallback, $failed === 0 ? 200 : 422);
 }
 
 if (str_ends_with($path, '/suspend')) {

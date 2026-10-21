@@ -1,0 +1,16 @@
+# User uploads must never execute as code.
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(php|php[0-9]?|phtml|phar|phps|pl|py|cgi|sh|asp|aspx|jsp)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(php|php[0-9]?|phtml|phar|phps|pl|py|cgi|sh|asp|aspx|jsp)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+Options -Indexes

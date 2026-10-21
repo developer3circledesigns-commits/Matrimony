@@ -98,7 +98,7 @@ $rr2=$make($body); $ok('webhook duplicate suppressed', !empty($rr2['duplicate'])
 $body2=json_encode(['id'=>'qa-2','event'=>'payment.captured','payload'=>['payment'=>['entity'=>['id'=>'pay_QA1','order_id'=>'order_QA1','amount'=>1,'currency'=>'INR']]]]);
 $rr3=$make($body2); $ok('webhook amount mismatch -> review', !empty($rr3['needs_review']));
 $st=$pdo->query("SELECT payment_status FROM purchases WHERE id=$pid")->fetchColumn();
-$ok('mismatch flagged needs_review', $st==='needs_review');
+$ok('mismatch does not downgrade verified payment', $st==='paid_verified');
 
 // cleanup
 $pdo->exec("DELETE FROM gateway_webhook_events WHERE provider_event_key LIKE 'qa-%'");

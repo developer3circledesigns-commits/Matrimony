@@ -207,7 +207,7 @@ final class MembershipService
         }
         AuditService::log($adminId, 'membership.activate', 'activation_request', $activationId, ['purchase_id' => $p['id'], 'membership_id' => $mid, 'mode' => $mode]);
         NotificationService::notify((int) $p['user_id'], 'membership_activated', 'Plan activated', 'Your ' . $p['plan_name_snapshot'] . ' is now active.', 'membership', $mid);
-        EmailOutboxService::queue((int) $p['user_id'], 'membership_activated', $p);
+        PaymentNotificationService::event('membership.activated', $p, ['dedupe' => 'membership:' . $mid]);
         return ['success' => true, 'membership_id' => $mid];
     }
 
@@ -236,9 +236,40 @@ final class MembershipService
             throw $e;
         }
         NotificationService::notify((int) $m['user_id'], 'membership_suspended', 'Membership suspended', 'Your membership was suspended. Reason: ' . $reason, 'membership', $membershipId);
-        EmailOutboxService::queue((int) $m['user_id'], 'membership_suspended', ['reason' => $reason, 'membership' => $m]);
+        PaymentNotificationService::event('membership.suspended', $m, [
+            'reason' => $reason,
+            'dedupe' => 'membership-suspend:' . $membershipId . ':' . substr(hash('sha256', $reason), 0, 12),
+        ]);
         AuditService::log($adminId, 'membership.suspend', 'membership', $membershipId, ['reason' => $reason]);
         return ['success' => true];
+    }
+
+    /**
+     * Suspend any active membership linked to a purchase (refund/dispute).
+     * Used by webhooks where there is no admin actor. Returns affected rows.
+     */
+    public static function suspendForPurchase(int $purchaseId, string $reason): int
+    {
+        try {
+            $pdo = Connection::pdo();
+            $stmt = $pdo->prepare("SELECT * FROM memberships WHERE purchase_id = :pid AND status = 'active'");
+            $stmt->execute([':pid' => $purchaseId]);
+            $rows = $stmt->fetchAll();
+            if (!$rows) {
+                return 0;
+            }
+            $reason = substr(trim($reason) !== '' ? trim($reason) : 'Payment reversed — pending review', 0, 255);
+            $pdo->prepare("UPDATE memberships SET status = 'suspended', suspension_reason = :r WHERE purchase_id = :pid AND status = 'active'")
+                ->execute([':r' => $reason, ':pid' => $purchaseId]);
+            foreach ($rows as $m) {
+                NotificationService::notify((int) $m['user_id'], 'membership_suspended', 'Membership suspended', 'Your membership was suspended. Reason: ' . $reason, 'membership', (int) $m['id']);
+                AuditService::log(null, 'membership.suspend.auto', 'membership', (int) $m['id'], ['purchase_id' => $purchaseId, 'reason' => $reason]);
+            }
+            return count($rows);
+        } catch (\Throwable $e) {
+            @error_log('MembershipService::suspendForPurchase failed (' . get_class($e) . ')');
+            return 0;
+        }
     }
 
     /** Housekeeping for reporting only — entitlement never depends on this. */

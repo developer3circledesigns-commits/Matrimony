@@ -16,7 +16,11 @@ if (!RateLimiter::attempt('payment.verify:' . $userId, 20, 3600)) {
     echo json_encode(['success' => false, 'error' => 'Too many verification attempts. Please try again later.']);
     exit;
 }
-$in = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+$raw = file_get_contents('php://input', false, null, 0, 65536);
+$in = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
+if (!is_array($in)) {
+    $in = $_POST;
+}
 $res = PaymentService::verifyCheckout(
     $userId,
     (string) ($in['razorpay_order_id'] ?? ''),

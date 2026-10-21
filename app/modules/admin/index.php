@@ -184,7 +184,7 @@ final class AdminController extends Controller
         $stats['revenue_30d_paise'] = (int) ($this->count($pdo, "SELECT COALESCE(SUM(amount_paise),0) FROM purchases WHERE payment_status = 'paid_verified' AND paid_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)"));
         $stats['open_reports'] = $this->count($pdo, "SELECT COUNT(*) FROM profile_reports WHERE status = 'open'");
         $stats['failed_webhooks'] = $this->count($pdo, "SELECT COUNT(*) FROM gateway_webhook_events WHERE processing_status = 'failed'");
-        $stats['outbox_backlog'] = $this->count($pdo, "SELECT COUNT(*) FROM email_outbox WHERE status IN ('pending','queued','failed')");
+        $stats['outbox_backlog'] = $this->count($pdo, "SELECT COUNT(*) FROM email_outbox WHERE status IN ('queued','sending','failed')");
 
         if (\Matrimony\Database\Schema::has('profiles', 'moderation_status')) {
             $stats['profiles_pending'] = $this->count($pdo, "SELECT COUNT(*) FROM profiles WHERE moderation_status = 'pending'");
@@ -693,7 +693,7 @@ final class AdminController extends Controller
 
             $where = '';
             $params = [];
-            if (in_array($status, ['pending', 'queued', 'sent', 'failed'], true)) {
+            if (in_array($status, ['queued', 'sending', 'sent', 'failed'], true)) {
                 $where = ' WHERE status = :s';
                 $params[':s'] = $status;
             }

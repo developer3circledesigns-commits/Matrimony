@@ -28,10 +28,10 @@ if (!is_array($input)) {
     $input = $_POST;
 }
 
-$name    = trim((string) ($input['name'] ?? ''));
+$name    = substr(trim(preg_replace('/[\r\n\0]+/', ' ', (string) ($input['name'] ?? '')) ?? ''), 0, 120);
 $email   = trim((string) ($input['email'] ?? ''));
-$phone   = trim((string) ($input['phone'] ?? ''));
-$subject = trim((string) ($input['subject'] ?? ''));
+$phone   = substr(trim(preg_replace('/[\r\n\0]+/', ' ', (string) ($input['phone'] ?? '')) ?? ''), 0, 30);
+$subject = substr(trim(preg_replace('/[\r\n\0]+/', ' ', (string) ($input['subject'] ?? '')) ?? ''), 0, 160);
 $message = trim((string) ($input['message'] ?? ''));
 
 $errors = [];
@@ -47,22 +47,7 @@ if (!empty($errors)) {
     exit;
 }
 
-$logDir = BASE_PATH . '/app/storage/contacts';
-if (!is_dir($logDir)) {
-    @mkdir($logDir, 0775, true);
-}
-$entry = json_encode([
-    'name'    => $name,
-    'email'   => $email,
-    'phone'   => $phone,
-    'subject' => $subject,
-    'message' => $message,
-    'ip'      => $_SERVER['REMOTE_ADDR'] ?? '',
-    'created_at' => date('Y-m-d H:i:s'),
-], JSON_UNESCAPED_UNICODE);
-@file_put_contents($logDir . '/' . date('Y-m-d') . '.log', $entry . "\n", FILE_APPEND | LOCK_EX);
-
-$adminEmail = trim((string) (getenv('ADMIN_EMAIL') ?: ''));
+// Contact content is PII: deliver it by email only, never write it to disk.
 $body = "Contact form message\n\n"
     . "Name: {$name}\n"
     . "Email: {$email}\n"
@@ -75,18 +60,10 @@ $html = '<p><b>Name:</b> ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8')
     . '<br><b>Subject:</b> ' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8')
     . '</p><p>' . nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) . '</p>';
 
-if ($adminEmail !== '' && filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
-    EmailOutboxService::queue(0, 'contact_inquiry', [
-        'message' => $body,
-        'subject_line' => '[Contact] ' . $subject,
-        'body_html' => $html,
-    ], $adminEmail);
-} else {
-    EmailOutboxService::queueToAdmins('contact_inquiry', [
-        'message' => $body,
-        'subject_line' => '[Contact] ' . $subject,
-        'body_html' => $html,
-    ]);
-}
+EmailOutboxService::queueToAdmins('contact_inquiry', [
+    'message' => $body,
+    'subject_line' => '[Contact] ' . $subject,
+    'body_html' => $html,
+]);
 
 echo json_encode(['success' => true, 'message' => 'Message sent successfully']);

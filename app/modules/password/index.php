@@ -38,7 +38,10 @@ final class PasswordController extends Controller
                     $pdo->prepare('INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (:u,:h,DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR))')
                         ->execute([':u' => $uid, ':h' => hash('sha256', $token)]);
                     $link = url('/password/reset?token=' . $token);
-                    \Matrimony\Services\EmailOutboxService::queue((int) $uid, 'password_reset', ['message' => 'Reset your password: ' . $link]);
+                    \Matrimony\Services\EmailOutboxService::queue((int) $uid, 'password_reset', [
+                        'message' => 'Reset your password using the secure link below.',
+                        'link' => $link,
+                    ]);
                     // Log only file copy in dev (never in production response)
                     if ((getenv('APP_ENV') ?: 'production') !== 'production') {
                         $msg = 'Dev reset link: ' . $link;

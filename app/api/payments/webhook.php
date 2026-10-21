@@ -11,7 +11,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
     exit;
 }
-$raw = file_get_contents('php://input');
+$maxBytes = 1024 * 1024;
+$declared = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+if ($declared > $maxBytes) {
+    http_response_code(413);
+    echo json_encode(['ok' => false, 'error' => 'Payload too large']);
+    exit;
+}
+$raw = file_get_contents('php://input', false, null, 0, $maxBytes + 1);
+if ($raw === false || $raw === '' || strlen($raw) > $maxBytes) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Invalid payload']);
+    exit;
+}
 $headers = [];
 foreach ($_SERVER as $k => $v) {
     if (str_starts_with($k, 'HTTP_')) {

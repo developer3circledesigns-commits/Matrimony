@@ -16,7 +16,11 @@ if (!RateLimiter::attempt(RateLimiter::keyFor('payment-order', (string) $userId)
     echo json_encode(['success' => false, 'error' => 'Too many payment attempts. Try again later.']);
     exit;
 }
-$in = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+$raw = file_get_contents('php://input', false, null, 0, 65536);
+$in = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
+if (!is_array($in)) {
+    $in = $_POST;
+}
 $plan = $in['plan'] ?? $in['plan_id'] ?? $in['slug'] ?? '';
 if ($plan === '') {
     http_response_code(400);

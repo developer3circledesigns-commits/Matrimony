@@ -4,11 +4,18 @@ declare(strict_types=1);
 namespace Matrimony\Mail;
 
 /**
- * Mail driver: 'log' (dev) or 'smtp' (production) using a dependency-free
+ * Mail driver: 'log' (dev only) or 'smtp' (production) using a dependency-free
  * SMTP client (shared-hosting safe, no Composer requirement).
+ *
+ * Hardening: header-injection guards, encoded subject/display name, CRLF-safe
+ * bodies with dot-stuffing, connect/read timeouts, certificate verification,
+ * and no plaintext credential exchange over an unencrypted connection.
  */
 final class Mailer
 {
+    private const CONNECT_TIMEOUT = 15;
+    private const READ_TIMEOUT = 20;
+
     /** @return true|string true on success, error string on failure */
     public static function send(string $to, string $subject, string $html, ?string $text = null)
     {
@@ -25,127 +32,192 @@ final class Mailer
                 @mkdir($dir, 0775, true);
             }
             @file_put_contents($dir . '/' . date('Y-m-d') . '.log', json_encode([
-                'to' => $to, 'subject' => $subject, 'at' => date('c'),
+                'to' => $to, 'subject' => $subject, 'at' => gmdate('c'),
                 'text' => $text ?? strip_tags($html),
             ], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
             return true;
+        }
+        if ($driver !== 'smtp') {
+            return 'Unsupported mail driver (use smtp)';
         }
         return self::sendSmtp($cfg, $to, $subject, $html, $text);
     }
 
     private static function sendSmtp(array $cfg, string $to, string $subject, string $html, ?string $text)
     {
-        $host = (string) ($cfg['host'] ?? 'localhost');
+        $host = trim((string) ($cfg['host'] ?? 'localhost'));
         $port = (int) ($cfg['port'] ?? 587);
         $user = (string) ($cfg['username'] ?? '');
         $pass = (string) ($cfg['password'] ?? '');
         $enc = strtolower((string) ($cfg['encryption'] ?? 'tls'));
-        $from = (string) ($cfg['from_address'] ?? 'no-reply@localhost');
+        $from = trim((string) ($cfg['from_address'] ?? 'no-reply@localhost'));
         $fromName = (string) ($cfg['from_name'] ?? 'Matrimony');
+
+        // Reject header injection and malformed addresses before touching SMTP.
+        foreach ([$to, $from, $subject] as $field) {
+            if (preg_match('/[\r\n\0]/', $field)) {
+                return 'Invalid mail header value';
+            }
+        }
         if (!filter_var($to, FILTER_VALIDATE_EMAIL) || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
             return 'Invalid from/to address';
         }
+        if (!in_array($enc, ['tls', 'ssl', 'none'], true)) {
+            return 'Unsupported SMTP encryption mode';
+        }
+        if ($host === '' || $port < 1 || $port > 65535) {
+            return 'Invalid SMTP host/port';
+        }
+        $isLocal = in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true);
+        if ($user !== '' && $enc === 'none' && !$isLocal) {
+            return 'Refusing to send SMTP credentials over an unencrypted connection';
+        }
+
+        $fromName = trim(preg_replace('/[\r\n\0]+/', ' ', $fromName) ?? '');
+        $encodedName = $fromName !== '' && function_exists('mb_encode_mimeheader')
+            ? mb_encode_mimeheader($fromName, 'UTF-8', 'B', "\r\n")
+            : $fromName;
+        $encodedSubject = function_exists('mb_encode_mimeheader')
+            ? mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n")
+            : $subject;
+
         $boundary = 'b_' . bin2hex(random_bytes(12));
         $headers = [
-            'From: "' . addslashes($fromName) . '" <' . $from . '>',
+            'Date: ' . gmdate('D, d M Y H:i:s') . ' +0000',
+            'From: ' . ($encodedName !== '' ? '"' . str_replace('"', '', $encodedName) . '" ' : '') . '<' . $from . '>',
             'To: <' . $to . '>',
-            'Subject: ' . $subject,
+            'Subject: ' . $encodedSubject,
+            'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . (parse_url((string) (getenv('APP_URL') ?: 'localhost'), PHP_URL_HOST) ?: 'localhost') . '>',
             'MIME-Version: 1.0',
             'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+            'X-Mailer: Matrimony',
         ];
-        $body = "--$boundary\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" . ($text ?? strip_tags($html)) . "\r\n"
-            . "--$boundary\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n" . $html . "\r\n--$boundary--\r\n";
+        $plain = $text ?? trim(html_entity_decode(strip_tags($html), ENT_QUOTES, 'UTF-8'));
+        $body = "--$boundary\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n"
+            . $plain . "\r\n"
+            . "--$boundary\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n"
+            . $html . "\r\n--$boundary--";
         $raw = implode("\r\n", $headers) . "\r\n\r\n" . $body;
+
         try {
             $remote = ($enc === 'ssl' ? 'ssl://' : 'tcp://') . $host . ':' . $port;
-            $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
-            $fp = @stream_socket_client($remote, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+            $ctx = stream_context_create(['ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'allow_self_signed' => false,
+                'peer_name' => $host,
+                'SNI_enabled' => true,
+            ]]);
+            $fp = @stream_socket_client($remote, $errno, $errstr, self::CONNECT_TIMEOUT, STREAM_CLIENT_CONNECT, $ctx);
             if (!$fp) {
-                return "SMTP connect failed: $errstr ($errno)";
+                @error_log('Mailer: SMTP connect failed to ' . $host . ':' . $port . ' (' . $errno . ')');
+                return 'SMTP connect failed';
             }
-            $read = function () use ($fp) {
+            stream_set_timeout($fp, self::READ_TIMEOUT);
+
+            $read = function () use ($fp): array {
                 $out = '';
-                while ($line = fgets($fp, 1024)) {
+                while (($line = fgets($fp, 2048)) !== false) {
                     $out .= $line;
                     if (preg_match('/^\d{3} /', $line)) {
                         break;
                     }
                 }
-                return $out;
+                $meta = stream_get_meta_data($fp);
+                if (!empty($meta['timed_out'])) {
+                    return [0, 'timeout'];
+                }
+                $code = preg_match('/^(\d{3})/m', $out, $m) ? (int) $m[1] : 0;
+                return [$code, $out];
             };
-            $cmd = function (string $c) use ($fp, $read) {
-                fwrite($fp, $c . "\r\n");
+            $cmd = function (string $c) use ($fp, $read): array {
+                if (@fwrite($fp, $c . "\r\n") === false) {
+                    return [0, 'write failed'];
+                }
                 return $read();
             };
-            $greet = $read();
-            if (strpos($greet, '220') === false) {
-                fclose($fp);
-                return 'SMTP greeting failed';
+            $fail = static function ($fp, string $message): string {
+                @fclose($fp);
+                return $message;
+            };
+
+            [$code, $greet] = $read();
+            if ($code !== 220) {
+                return $fail($fp, 'SMTP greeting failed');
             }
-            $host_name = gethostname() ?: 'localhost';
-            $r = $cmd('EHLO ' . $host_name);
-            if (strpos($r, '250') === false) {
-                fclose($fp);
-                return 'EHLO failed';
+            $hostName = gethostname() ?: 'localhost';
+            [$code] = $cmd('EHLO ' . $hostName);
+            if ($code !== 250) {
+                return $fail($fp, 'EHLO failed');
             }
             if ($enc === 'tls') {
-                $r = $cmd('STARTTLS');
-                if (strpos($r, '220') === false) {
-                    fclose($fp);
-                    return 'STARTTLS failed';
+                [$code] = $cmd('STARTTLS');
+                if ($code !== 220) {
+                    return $fail($fp, 'STARTTLS failed');
                 }
-                if (!stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                    fclose($fp);
-                    return 'TLS negotiation failed';
+                $methods = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+                if (defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')) {
+                    $methods |= STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
                 }
-                $r = $cmd('EHLO ' . $host_name);
-                if (strpos($r, '250') === false) {
-                    fclose($fp);
-                    return 'EHLO (TLS) failed';
+                if (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT')) {
+                    $methods |= STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+                }
+                if (!@stream_socket_enable_crypto($fp, true, $methods)) {
+                    return $fail($fp, 'TLS negotiation failed');
+                }
+                [$code] = $cmd('EHLO ' . $hostName);
+                if ($code !== 250) {
+                    return $fail($fp, 'EHLO (TLS) failed');
                 }
             }
             if ($user !== '') {
-                $r = $cmd('AUTH LOGIN');
-                if (strpos($r, '334') === false) {
-                    fclose($fp);
-                    return 'AUTH not accepted';
+                if ($pass === '') {
+                    return $fail($fp, 'SMTP password is not configured');
                 }
-                $r = $cmd(base64_encode($user));
-                if (strpos($r, '334') === false) {
-                    fclose($fp);
-                    return 'SMTP username rejected';
+                [$code] = $cmd('AUTH LOGIN');
+                if ($code !== 334) {
+                    return $fail($fp, 'AUTH not accepted');
                 }
-                $r = $cmd(base64_encode($pass));
-                if (strpos($r, '235') === false) {
-                    fclose($fp);
-                    return 'SMTP authentication failed';
+                [$code] = $cmd(base64_encode($user));
+                if ($code !== 334) {
+                    return $fail($fp, 'SMTP username rejected');
+                }
+                [$code] = $cmd(base64_encode($pass));
+                if ($code !== 235) {
+                    return $fail($fp, 'SMTP authentication failed');
                 }
             }
-            $r = $cmd('MAIL FROM:<' . $from . '>');
-            if (strpos($r, '250') === false) {
-                fclose($fp);
-                return 'MAIL FROM rejected';
+            [$code] = $cmd('MAIL FROM:<' . $from . '>');
+            if ($code !== 250) {
+                return $fail($fp, 'MAIL FROM rejected');
             }
-            $r = $cmd('RCPT TO:<' . $to . '>');
-            if (strpos($r, '250') !== false && strpos($r, '251') !== false) {
-                // accepted variants
+            [$code] = $cmd('RCPT TO:<' . $to . '>');
+            if ($code !== 250 && $code !== 251) {
+                return $fail($fp, 'RCPT TO rejected');
             }
-            if (strpos($r, '250') === false && strpos($r, '251') === false) {
-                fclose($fp);
-                return 'RCPT TO rejected';
+            [$code] = $cmd('DATA');
+            if ($code !== 354) {
+                return $fail($fp, 'DATA not accepted');
             }
-            $r = $cmd('DATA');
-            if (strpos($r, '354') === false) {
-                fclose($fp);
-                return 'DATA not accepted';
+
+            // Normalise line endings, dot-stuff leading periods (SMTP transparency).
+            $data = str_replace(["\r\n", "\r"], "\n", $raw);
+            $data = str_replace("\n", "\r\n", $data);
+            $data = preg_replace('/^\./m', '..', $data) ?? $data;
+            if (@fwrite($fp, $data . "\r\n.\r\n") === false) {
+                return $fail($fp, 'SMTP body write failed');
             }
-            fwrite($fp, $raw . "\r\n.\r\n");
-            $r = $read();
+            [$code] = $read();
             $cmd('QUIT');
-            fclose($fp);
-            return (strpos($r, '250') !== false) ? true : ('SMTP send rejected: ' . substr($r, 0, 200));
+            @fclose($fp);
+            if ($code !== 250) {
+                @error_log('Mailer: SMTP rejected message with code ' . $code);
+                return 'SMTP send rejected (code ' . $code . ')';
+            }
+            return true;
         } catch (\Throwable $e) {
-            return 'SMTP error: ' . substr($e->getMessage(), 0, 200);
+            @error_log('Mailer: SMTP exception ' . get_class($e));
+            return 'SMTP error';
         }
     }
 }

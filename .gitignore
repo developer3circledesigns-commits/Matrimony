@@ -12,6 +12,9 @@ app/storage/contacts/*
 !app/storage/contacts/.gitkeep
 uploads/*
 !uploads/.gitkeep
+!uploads/.htaccess
 .env
+.env.*
+!.env.example
 .DS_Store
 Thumbs.db

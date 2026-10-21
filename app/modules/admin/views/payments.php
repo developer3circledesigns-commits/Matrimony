@@ -55,6 +55,7 @@ $tabs = [
                     $planName      = (string) ($r['plan_name_snapshot'] ?? '');
                     $reference     = (string) ($r['public_reference'] ?? ('act#' . $activationId));
                     $canActivate   = $payStatus === 'paid_verified' && in_array($actStatus, ['awaiting_admin', 'on_hold'], true);
+                    $refundable    = in_array($payStatus, ['paid_verified', 'disputed'], true) && (int) ($r['amount_paise'] ?? 0) > 0;
                     $orderId       = (string) ($r['gateway_order_id'] ?? '');
                     $paymentId     = (string) ($r['gateway_payment_id'] ?? '');
                     ?>
@@ -119,17 +120,31 @@ $tabs = [
                                             data-fields='<?= e(json_encode(['activation_id' => $activationId], JSON_UNESCAPED_SLASHES)) ?>'>
                                         Reject
                                     </button>
-                                <?php else: ?>
-                                    <form method="POST" action="/api/admin/payments/reconcile" class="admin-rowform"
-                                          data-confirm="Reconcile purchase <?= e($reference) ?> against the gateway?"
-                                          data-confirm-title="Reconcile payment">
-                                        <input type="hidden" name="csrf" value="<?= e((string) $csrf) ?>">
-                                        <input type="hidden" name="purchase_id" value="<?= $purchaseId ?>">
-                                        <button class="btn btn-secondary btn-sm" type="submit">
-                                            <?= admin_icon('refresh', 13) ?> Reconcile
-                                        </button>
-                                    </form>
                                 <?php endif; ?>
+                                <?php if ($refundable): ?>
+                                    <button class="btn btn-outline-danger btn-sm" type="button"
+                                            data-confirm="Record a full refund request of <?= e(admin_money($r['amount_paise'] ?? 0)) ?> for <?= e($reference) ?>? This does not move money; process it in the Razorpay dashboard afterwards."
+                                            data-confirm-title="Request full refund"
+                                            data-confirm-text="Record refund"
+                                            data-confirm-danger
+                                            data-endpoint="/api/admin/payments/refund"
+                                            data-requires-reason="1"
+                                            data-fields='<?= e(json_encode([
+                                                'purchase_id' => $purchaseId,
+                                                'amount_paise' => (int) ($r['amount_paise'] ?? 0),
+                                            ], JSON_UNESCAPED_SLASHES)) ?>'>
+                                        Refund
+                                    </button>
+                                <?php endif; ?>
+                                <form method="POST" action="/api/admin/payments/reconcile" class="admin-rowform"
+                                      data-confirm="Reconcile purchase <?= e($reference) ?> against the gateway?"
+                                      data-confirm-title="Reconcile payment">
+                                    <input type="hidden" name="csrf" value="<?= e((string) $csrf) ?>">
+                                    <input type="hidden" name="purchase_id" value="<?= $purchaseId ?>">
+                                    <button class="btn btn-secondary btn-sm" type="submit">
+                                        <?= admin_icon('refresh', 13) ?> Reconcile
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
