@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 location.reload();
             } else {
-                if (result.redirect) {
+                if (result.redirect && result.code === 'no_active_plan') {
                     window.location.href = result.redirect;
                     return;
                 }

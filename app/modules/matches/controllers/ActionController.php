@@ -23,7 +23,11 @@ final class ActionController
         if ($status === 'interested' && class_exists('Matrimony\\Services\\InterestService')) {
             $gate = \Matrimony\Services\InterestService::canSend($viewerId, $targetId);
             if (!$gate['ok']) {
-                return ['success' => false, 'error' => $gate['error'] ?? 'Membership required', 'code' => $gate['code'] ?? 'denied', 'redirect' => $gate['redirect'] ?? '/plans'];
+                $denied = ['success' => false, 'error' => $gate['error'] ?? 'Membership required', 'code' => $gate['code'] ?? 'denied'];
+                if (!empty($gate['redirect'])) {
+                    $denied['redirect'] = $gate['redirect'];
+                }
+                return $denied;
             }
         }
 
